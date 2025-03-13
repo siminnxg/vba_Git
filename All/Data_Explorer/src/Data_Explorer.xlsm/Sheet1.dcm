@@ -1,0 +1,383 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "Sheet1"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+'=====================================================================
+'매크로 : Worksheet_Change
+'대상 시트 : Home 시트
+'동작 : 검색 영역에 데이터 변경이 있는 경우 매크로 동작, 데이터 시트에 필터된 내용 Home 시트에 호출
+'=====================================================================
+Private Sub Worksheet_Change(ByVal Target As Range)
+    
+    '###변수 선언###
+        
+    Dim shtname As String '---시트명 저장 변수
+    Dim data_range As ListObject '----데이터 시트의 전체 데이터 영역 저장 변수
+    Dim search_data As String '---사용자가 검색하려는 열 값 저장 변수
+    Dim category_range As Range '--- 선택된 열 저장 변수
+    Dim data_adr As Range '---데이터 시트 내 카테고리 행을 제외한 영역 저장 변수
+    Dim result As Range '---데이터 시트 내 검색된 데이터 위치 저장 변수
+        
+    '###동작 시작###
+   
+    '---화면 업데이트 중지
+    Call update_start
+    
+    '---공통으로 사용하는 영역 위치, 색상 호출
+    Call range_set
+    Call color_set
+    
+    '---에러가 발생하면 exit_error 로 이동
+    On Error GoTo exit_error
+                
+    '---선택된 열이 1개도 없으면 종료
+    If search_category_start.Value = "" Then '---선택된 열 시작 위치 공백 확인
+        Call update_end
+        Exit Sub
+    End If
+    
+    '---선택된 열 영역 확인
+    Set category_range = Range(search_category_start, search_category_end)
+    
+    '---사용자가 검색할 영역 확인
+    Set serch_range = Range(search_user_start, search_category_end.Offset(-1, 0)) '---선택된 열 기준으로 검색 영역 할당
+    
+    '---사용자 입력 확인
+    If Not Intersect(Target, serch_range) Is Nothing Then
+               
+        shtname = CStr(act_sheet_name.Value)
+                        
+        search_data = Target.Offset(1, 0)
+        
+        Set data_range = Sheets(shtname).ListObjects(1)
+        
+        Set data_adr = data_range.DataBodyRange '---카테고리 행을 제외한 영역 위치 저장
+                
+        Range("DATA").FormatConditions.Delete
+        
+        '---데이터가 불러와져있는 영역 초기화
+        Range(search_category_start.Offset(1, 0), search_category_start.Offset(Range("DATA").Rows.Count, category_range.Cells.Count - 1)).ClearContents
+                                        
+        '---다중 영역 선택 후 delete 동작 시 방어
+        If Target.Cells.Count > 1 Then
+            Range("notice") = "하나의 셀만 선택해주세요."
+            Range("notice").Font.Color = vbRed
+            GoTo data_paste
+        End If
+        
+        '---검색한 위치 하단에 선택된 열이 공백 상태일 때 방어
+        If Target.Offset(1, 0).Value = "" Then
+                GoTo exit_sub
+        End If
+        
+        '---검색한 값이 없는 경우 필터 해제
+        If Target.Value = "" Then
+            Sheets(shtname).Range("A1").AutoFilter _
+            Field:=data_range.ListColumns(search_data).Index
+            
+            Target.Offset(1, 0).Interior.Color = vbWhite
+            Range("notice") = "검색할 내용을 입력해주세요."
+            Range("notice").Font.Color = vbBlack
+            
+        '---검색한 값이 존재하면 데이터 시트 필터 적용
+        Else
+            Sheets(shtname).Range("A1").AutoFilter _
+            Field:=data_range.ListColumns(search_data).Index, _
+            Criteria1:="=*" & Target.Value & "*", _
+            Criteria2:=Target.Value, _
+            Operator:=xlOr
+                        
+            Target.Offset(1, 0).Interior.Color = category_sel_color
+            
+            '---사용자가 입력한 행 고정 표시
+            If search_FixRow.Value > 0 Then
+                
+                For i = 1 To search_FixRow.Value
+                
+                 Sheets(shtname).Rows(i).Hidden = False
+                 
+                Next
+                
+            End If
+            
+            '---검색된 값이 없으면 빈칸
+            If data_range.Range.SpecialCells(xlCellTypeVisible).Count = data_range.HeaderRowRange.Count Then '---화면에 첫행을 제외한 행이 보이는지 확인
+                
+                '---Home 시트에 데이터가 불러와져있는 영역 초기화
+                Range(search_category_start.Offset(1, 0), search_category_start.Offset(data_adr.Rows.Count + 1, data_adr.Columns.Count + 1)).Clear
+                
+                Range("notice") = "검색된 내용이 없습니다."
+                Range("notice").Font.Color = vbRed
+                                
+                Target.Select
+                GoTo exit_sub
+
+            End If
+            
+            Range("notice") = "검색되었습니다."
+            Range("notice").Font.Color = vbBlack
+            
+        End If
+
+'---데이터 시트 값을 Home 검색 영역에 가져오기
+data_paste:
+        '---검색 카테고리 있는 내용만 가져오기
+        For i = 1 To category_range.Columns.Count   '---카테고리 수만큼 반복
+            search_data = search_category_start.Offset(0, i - 1)
+            
+            '---검색된 내용을 열 단위로 result 변수에 할당
+            If result Is Nothing Then
+                Set result = data_range.ListColumns(search_data).Range
+            Else
+                Set result = Union(result, data_range.ListColumns(search_data).Range)
+            End If
+        Next
+          
+        Call update_start
+        
+        '---테스트 시 배열로 데이터 가져오는 것보다 빠른 속도로 copy, paste 사용됨
+        result.SpecialCells(xlCellTypeVisible).Copy '---result 변수에 저장된 영역 복사
+        search_category_start.PasteSpecial xlPasteValues '---선택된 열 시작 지점에 붙여넣기
+                     
+        Application.CutCopyMode = False
+        
+        '---DATA 이름 범위 재설정
+        ThisWorkbook.Names("DATA").RefersTo = Range(Selection, search_user_start)
+        
+        '---DATA 이름 범위에 조건부 서식 적용
+        With Range("DATA").FormatConditions.Add( _
+            Type:=xlExpression, Formula1:="=$K$5<>""""")
+            
+            '---셀 테두리
+            .Borders(xlLeft).LineStyle = xlContinuous
+            .Borders(xlRight).LineStyle = xlContinuous
+            .Borders(xlTop).LineStyle = xlContinuous
+            .Borders(xlBottom).LineStyle = xlContinuous
+        
+        End With
+                        
+        Target.Select
+        
+    End If
+
+'---종료 처리
+exit_sub:
+    
+    Call update_end
+    Exit Sub
+
+'---에러 발생 시 처리
+exit_error:
+    MsgBox ("오류가 발생했습니다. 오류 코드 : " & Err.Number & " " & Err.Description)
+    Call update_end
+
+End Sub
+
+'=====================================================================
+'매크로 : Worksheet_SelectionChange
+'대상 시트 : Home 시트
+'동작 : 열 리스트 영역을 지정 후 해당 위치 마우스 클릭 시 셀 색상 적용하여 사용자가 열이 선택되었다고 인지
+'=====================================================================
+Private Sub Worksheet_SelectionChange(ByVal Target As Range)
+    
+    '###동작 시작###
+    
+    '---공통으로 사용하는 영역 위치, 색상 호출
+    Call range_set
+    Call color_set
+    
+    '---선택할 열 없는 경우 동작하지 않음
+    If act_category_start = "" Then
+    
+        Exit Sub
+        
+    End If
+    
+    '---선택한 셀이 열 리스트 영역 밖이라면 미 동작 처리
+    If Not Intersect(Target, act_sheet_name) Is Nothing Or Not Intersect(Target, Range("F:F")) Is Nothing Or Not Intersect(Target, Range("H:H")) Is Nothing Or Not Intersect(Target, act_category_end.Offset(1, 0)) Is Nothing Then
+        
+        Exit Sub
+        
+    '---선택한 셀이 열 리스트 안이라면 동작
+    ElseIf Not Intersect(Target, act_category_list) Is Nothing Then
+    
+        '---셀 색상 확인 및 색 적용
+        If Target.Interior.Color = category_sel_color Then
+        
+            Target.Interior.Color = vbWhite
+            
+        Else
+        
+            Target.Interior.Color = category_sel_color
+
+        End If
+    End If
+End Sub
+
+'=====================================================================
+'버튼 마우스 오버 시 안내 문구 표시
+'=====================================================================
+
+'파일 검색 버튼
+Private Sub Button_File_search_MouseMove(ByVal Button As Integer, ByVal Shift As Integer, ByVal X As Single, ByVal Y As Single)
+    
+    On Error Resume Next
+    
+    Dim oShape As Shape
+
+    Set oShape = Sheets("Home").Shapes("note")
+    
+    With oShape
+    
+        .TextFrame.Characters.Text = "파일 탐색기를 오픈합니다." & _
+            vbCrLf & "엑셀 형식 파일만 선택 가능하며 용량 큰 파일 선택 시 일정 시간 소요됩니다." & _
+            vbCrLf & "시트 목록 드롭다운 선택 시 전체 표시됩니다."
+            
+        .Fill.ForeColor.RGB = RGB(246, 198, 173)
+        
+    End With
+    
+End Sub
+
+'파일 불러오기 버튼
+Private Sub Button_File_load_MouseMove(ByVal Button As Integer, ByVal Shift As Integer, ByVal X As Single, ByVal Y As Single)
+
+    On Error Resume Next
+    
+    Dim oShape As Shape
+
+    Set oShape = Sheets("Home").Shapes("note")
+    
+    With oShape
+    
+        .TextFrame.Characters.Text = "입력된 정보로 파일을 불러옵니다." & _
+            vbCrLf & "불러오기 시 프리셋은 입력한 이름으로 자동 저장됩니다." & _
+            vbCrLf & "경로, 이름, 시트 필수 입력해야하고, 프리셋 이름은 미입력 시 임의로 지정됩니다."
+        
+        .Fill.ForeColor.RGB = RGB(246, 198, 173)
+        
+    End With
+    
+End Sub
+
+'프리셋 불러오기 버튼
+Private Sub Button_Preset_load_MouseMove(ByVal Button As Integer, ByVal Shift As Integer, ByVal X As Single, ByVal Y As Single)
+
+    On Error Resume Next
+    
+    Dim oShape As Shape
+
+    Set oShape = Sheets("Home").Shapes("note")
+    
+    With oShape
+    
+        .TextFrame.Characters.Text = "선택된 프리셋을 불러옵니다." & _
+            vbCrLf & "불러오기 시 원본 파일 변경사항을 최신화하여 불러옵니다." & _
+            vbCrLf & "원본 파일 위치가 변경된 경우 기존 저장된 데이터로 불러옵니다."
+
+        .Fill.ForeColor.RGB = RGB(246, 198, 173)
+        
+    End With
+    
+End Sub
+
+'프리셋 제거하기 버튼
+Private Sub Button_Preset_delete_MouseMove(ByVal Button As Integer, ByVal Shift As Integer, ByVal X As Single, ByVal Y As Single)
+
+    On Error Resume Next
+    
+    Dim oShape As Shape
+
+    Set oShape = Sheets("Home").Shapes("note")
+    
+    With oShape
+    
+        .TextFrame.Characters.Text = "선택된 프리셋을 제거합니다." & _
+            vbCrLf & "프리셋 우측 다중 선택 버튼을 클릭하시면 프리셋 다중 선택이 가능합니다."
+        
+        .Fill.ForeColor.RGB = RGB(246, 198, 173)
+        
+    End With
+End Sub
+
+'프리셋 수정하기 버튼
+Private Sub Button_Preset_edit_MouseMove(ByVal Button As Integer, ByVal Shift As Integer, ByVal X As Single, ByVal Y As Single)
+
+    On Error Resume Next
+    
+    Dim oShape As Shape
+
+    Set oShape = Sheets("Home").Shapes("note")
+    
+    With oShape
+    
+        .TextFrame.Characters.Text = "선택된 프리셋의 파일 경로를 일괄 수정합니다." & _
+            vbCrLf & "프리셋 우측 다중 선택 버튼을 클릭하시면 프리셋 다중 선택이 가능합니다."
+        
+        .Fill.ForeColor.RGB = RGB(246, 198, 173)
+        
+    End With
+End Sub
+
+'버튼 바깥 영역 마우스 오버 시 메모 초기화
+Private Sub ButtonGroup_MouseMove(ByVal Button As Integer, ByVal Shift As Integer, ByVal X As Single, ByVal Y As Single)
+  
+    On Error Resume Next
+        
+    Dim oShape As Shape
+
+    Set oShape = Sheets("Home").Shapes("note")
+    
+    With oShape
+        
+        .Fill.ForeColor.RGB = RGB(242, 242, 242)
+        
+        .TextFrame.Characters.Text = ""
+        
+    End With
+    
+End Sub
+
+'=====================================================================
+'버튼 클릭 시 동작
+'=====================================================================
+
+'파일 검색 버튼
+Private Sub Button_File_search_Click()
+
+    Call File_search
+    
+End Sub
+
+'파일 불러오기 버튼
+Private Sub Button_File_load_Click()
+
+    Call FIle_Load
+    
+End Sub
+
+'프리셋 불러오기 버튼
+Private Sub Button_Preset_load_Click()
+
+    Call preset_load
+    
+End Sub
+
+'프리셋 제거 버튼
+Private Sub Button_Preset_delete_Click()
+
+    Call preset_delete
+    
+End Sub
+
+'프리셋 수정 버튼
+Private Sub Button_Preset_edit_Click()
+    
+    Call preset_edit
+    
+End Sub
