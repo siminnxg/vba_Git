@@ -299,7 +299,7 @@ Public Sub SearchFile()
             Exit Sub
             
         '1개 파일 선택 시 기존 파일명 리스트 하위에 붙여넣기
-        ElseIf .SelectedItems.count = 1 And 파일명.count < 10 And 파일명.count > 1 Then
+        ElseIf .SelectedItems.count = 1 And 파일명.count < 10 And 파일명(1) <> "" Then
             
             varFileNum = InStrRev(.SelectedItems(1), "\") '---'\' 기준으로 파일경로와 파일명 구분
             파일경로 = Left(.SelectedItems(1), varFileNum - 1) '---파일 경로 입력

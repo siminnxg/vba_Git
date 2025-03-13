@@ -45,6 +45,14 @@ Public Function CheckFile() As Boolean
     '입력된 파일 개수만큼 반복
     For j = 1 To 파일명.count
         
+        '엑셀 파일인지 확인
+        If InStr(파일명(i), ".xl") = 0 Then
+            MsgBox 파일명(i) & "은(는) 엑셀 형식의 파일이 아닙니다."
+            CheckFile = True
+            Exit Function
+            
+        End If
+        
         strFile = 파일경로 & "\" & 파일명(j)
         
         '입력된 경로에 입력된 파일명이 존재하는지 확인
