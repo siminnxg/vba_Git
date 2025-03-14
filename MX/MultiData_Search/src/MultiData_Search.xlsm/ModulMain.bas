@@ -26,7 +26,7 @@ Public Sub SearchData()
     
     
     '###동작 시작###
-    'On Error Resume Next
+    On Error Resume Next
         
     Call UpdateStart '---화면 업데이트 중지
     Call SetRange '---주 사용 영역 지정
@@ -68,7 +68,15 @@ Public Sub SearchData()
         '파일 호출
         Set Obj = GetObject(strFile)
         Set Wb = Workbooks(Dir(strFile))
-                       
+        
+        '시트명 공백 시 첫번째 시트 기본값으로 지정
+        If strSheet = "" Then
+        
+            strSheet = Wb.Sheets(1).Name
+            파일명(i).Offset(0, 1) = strSheet
+            
+        End If
+        
         '파일에 해당 시트 없는 경우 종료
         If CheckSheet(Wb, strSheet) = True Then
             MsgBox 파일명(i) & " 파일에 " & strSheet & " 시트가 존재하지 않습니다."

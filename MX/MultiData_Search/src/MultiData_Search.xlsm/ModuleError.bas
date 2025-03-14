@@ -22,10 +22,10 @@ Public Function CheckUserData() As Boolean
         
     End If
     
-    '파일명, 시트명 입력 체크
+    '파일명 입력 체크
     For i = 1 To 파일명.count
-        If 파일명(i) = "" Or 파일명(i).Offset(0, 1) = "" Then
-            MsgBox "파일명, 시트명을 입력해주세요."
+        If 파일명(i) = "" Then
+            MsgBox "파일명을 입력해주세요."
             CheckUserData = True
             Exit Function
             
@@ -46,7 +46,7 @@ Public Function CheckFile() As Boolean
     For j = 1 To 파일명.count
         
         '엑셀 파일인지 확인
-        If InStr(파일명(i), ".xl") = 0 Then
+        If InStr(파일명(j), ".xl") = 0 Then
             MsgBox 파일명(i) & "은(는) 엑셀 형식의 파일이 아닙니다."
             CheckFile = True
             Exit Function
