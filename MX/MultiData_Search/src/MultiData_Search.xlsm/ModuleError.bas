@@ -9,7 +9,7 @@ Option Explicit
 Public Function CheckUserData() As Boolean
     
     '파일 경로 입력 체크
-    If 파일경로 = "" Then
+    If 파일경로(1) = "" Then
         MsgBox "파일 경로를 입력해주세요."
         CheckUserData = True
         Exit Function
@@ -24,6 +24,7 @@ Public Function CheckUserData() As Boolean
     
     '파일명 입력 체크
     For i = 1 To 파일명.count
+    
         If 파일명(i) = "" Then
             MsgBox "파일명을 입력해주세요."
             CheckUserData = True
@@ -53,7 +54,7 @@ Public Function CheckFile() As Boolean
             
         End If
         
-        strFile = 파일경로 & "\" & 파일명(j)
+        strFile = 파일경로(j) & "\" & 파일명(j)
         
         '입력된 경로에 입력된 파일명이 존재하는지 확인
         If Dir(strFile, vbDirectory) = "" Then

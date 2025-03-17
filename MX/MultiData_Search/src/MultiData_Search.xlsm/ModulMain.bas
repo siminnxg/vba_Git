@@ -8,6 +8,8 @@ Option Explicit
 '=====================================================================
 Public Sub SearchData()
     
+    '###변수 선언###
+    
     '호출 파일 관련 변수
     Dim Obj As Object
     Dim Wb As Workbook
@@ -19,7 +21,7 @@ Public Sub SearchData()
     '호출한 파일 내에서 영역 지정
     Dim rngWS_Search As Range '---검색 위치 저장
     Dim rngWS_Result As Range '---검색 결과 저장
-    Dim rngWS_Col As Variant '---검색중인 시트의 열 개수
+    Dim varWS_Col As Variant '---검색중인 시트의 열 개수
     
     Dim strSearchStart As String '---첫번째 검색어 주소 저장
     Dim varResultCount As Variant '---검색된 개수
@@ -48,26 +50,14 @@ Public Sub SearchData()
     '검색할 개수 확인
     For i = 1 To 파일명.count
         
-        strFile = 파일경로.Value & "\" & 파일명(i)
+        strFile = 파일경로(i) & "\" & 파일명(i)
         strSheet = 파일명(i).Offset(0, 1).Value
-        
-        '파일 정보 etc 시트 '오브젝트' 영역에 저장
-        If 오브젝트 = "" Then
-            Range("오브젝트")(i) = strFile
-        
-        Else
-            j = Application.WorksheetFunction.CountIf(Range("오브젝트"), strFile)
-            
-            If j = 0 Then
-                오브젝트.Offset(Range("오브젝트").count, 0) = strFile
-                ThisWorkbook.Names("오브젝트").RefersTo = Range(Range("오브젝트"), 오브젝트.End(xlDown)) '---파일 개수가 2개 이상인 경우 '오브젝트' 영역 재지정
-            End If
-            
-        End If
     
         '파일 호출
         Set Obj = GetObject(strFile)
         Set Wb = Workbooks(Dir(strFile))
+        
+        Call ObjectList(strFile)
         
         '시트명 공백 시 첫번째 시트 기본값으로 지정
         If strSheet = "" Then
@@ -122,7 +112,7 @@ Public Sub SearchData()
     '입력된 파일 개수만큼 반복
     For i = 1 To 파일명.count
     
-        strFile = 파일경로.Value & "\" & 파일명(i)
+        strFile = 파일경로(i) & "\" & 파일명(i)
         strSheet = 파일명(i).Offset(0, 1).Value
         
         varResultCount = 0 '---검색 개수 초기화
@@ -147,9 +137,16 @@ Public Sub SearchData()
                         
             strSearchStart = rngWS_Search.Address '---처음 검색한 위치 저장
 
-            rngWS_Col = WS.UsedRange.Columns.count '---검색할 파일에서 사용중인 열 개수 체크
+            varWS_Col = WS.UsedRange.Columns.count '---검색할 파일에서 사용중인 열 개수 체크
             
-            Set rngWS_Result = WS.UsedRange.Rows(2) '---머릿글 행 설정 (MX는 2행 고정)
+            '머릿글 행 설정
+            If 머릿글(i) = "" Then
+                Set rngWS_Result = WS.UsedRange.Rows(1)
+                
+            Else
+                Set rngWS_Result = WS.UsedRange.Rows(머릿글(i))
+                
+            End If
             
             Set rngWS_Result = Union(rngWS_Result, WS.UsedRange.Rows(rngWS_Search.Row)) '---검색된 행을 변수에 추가
             
@@ -173,7 +170,7 @@ Public Sub SearchData()
                 
             Next rngTemp
         
-            ThisWorkbook.Names("DATA").RefersTo = Range(Range("DATA"), 검색결과.Offset(varResultCount, rngWS_Col)) '---'DATA' 영역 재지정
+            ThisWorkbook.Names("DATA").RefersTo = Range(Range("DATA"), 검색결과.Offset(varResultCount, varWS_Col)) '---'DATA' 영역 재지정
             
             Set 검색결과 = 검색결과.Offset(varResultCount + 1, 0) '---'검색결과' 영역 재지정
             
@@ -271,6 +268,7 @@ Public Sub ClearSearch()
     
     '검색 결과 표시되는 'DATA' 영역 초기화
     Range("DATA").Clear
+    Range("DATA").FormatConditions.Delete '---조건부 서식 제거
     ThisWorkbook.Names("DATA").RefersTo = 검색결과
     
     검색어.ClearContents '--- 검색어 초기화
@@ -285,14 +283,15 @@ End Sub
 Public Sub SearchFile()
     
     Dim varFileNum As Variant
+    Dim varFileAdrCheck As Variant
     
     Call SetRange '---주 사용 영역 지정
     
     '파일 경로가 입력되어 있으면 해당 경로로 지정
     '(잘못된 경로 입력 시 자동으로 무시됨)
-    If 파일경로 <> "" Then
-         Application.FileDialog(msoFileDialogFilePicker).InitialFileName = 파일경로
-         
+    If 파일경로(1) <> "" Then
+         Application.FileDialog(msoFileDialogFilePicker).InitialFileName = 파일경로(1)
+
     End If
     
     '파일 탐색기 오픈
@@ -310,14 +309,15 @@ Public Sub SearchFile()
         ElseIf .SelectedItems.count = 1 And 파일명.count < 10 And 파일명(1) <> "" Then
             
             varFileNum = InStrRev(.SelectedItems(1), "\") '---'\' 기준으로 파일경로와 파일명 구분
-            파일경로 = Left(.SelectedItems(1), varFileNum - 1) '---파일 경로 입력
-            Cells(파일명.Row + 파일명.count, 2) = Mid(.SelectedItems(1), varFileNum + 1) '---파일명 입력
+            파일명(파일명.count).Offset(1, 0) = Mid(.SelectedItems(1), varFileNum + 1) '---파일명 입력
+            파일경로(파일경로.count).Offset(1, 0) = Left(.SelectedItems(1), varFileNum - 1) '---파일경로 입력
+            
             Exit Sub
             
         End If
         
-        파일경로.ClearContents '---파일 경로 초기화
-        Range(파일명, 파일명.Offset(0, 1)).ClearContents '---파일명, 시트명 리스트 초기화
+        Union(파일경로, 파일명, 시트명, 머릿글).ClearContents '---파일 정보 리스트 초기화
+        시트명.Validation.Delete '---시트명 드롭다운 제거
             
         Call SetRange '---파일명 영역 재지정
             
@@ -332,16 +332,89 @@ Public Sub SearchFile()
             End If
             
             If i = 11 Then
+            
                 MsgBox "선택된 파일 개수가 10개를 초과하여 상위 10개의 파일 리스트만 호출됩니다."
                 Exit For
+                
             End If
             
             '파일명 리스트에 값 붙여넣기
             varFileNum = InStrRev(.SelectedItems(i), "\") '---'\' 기준으로 파일경로와 파일명 구분
-            파일경로 = Left(.SelectedItems(i), varFileNum - 1) '---파일 경로 입력
             파일명(i) = Mid(.SelectedItems(i), varFileNum + 1) '---파일명 입력
+            파일경로(i) = Left(.SelectedItems(1), varFileNum - 1) '---파일 경로 입력
             
         Next
     End With
 
+End Sub
+
+'=====================================================================
+'매크로 : SearchSheet
+'대상 시트 : Main 시트
+'동작 : 입력된 파일에서 시트명을 드롭다운 형식으로 표시
+'=====================================================================
+Public Sub SearchSheet()
+    
+    '호출 파일 관련 변수
+    Dim Obj As Object
+    Dim Wb As Workbook
+    Dim WS As Worksheet
+    
+    Dim strFile As String '---파일 경로 & 이름
+    Dim strSheets() As String '---시트 리스트 저장 배열
+    
+    Call UpdateStart
+    Call SetRange
+    
+    '사용자 입력 데이터 없는 경우 처리
+    If CheckUserData = True Then
+        
+        GoTo exit_sub
+    
+    '경로에 파일 없는 경우 처리
+    ElseIf CheckFile() = True Then
+                
+        GoTo exit_sub
+        
+    End If
+    
+    '입력된 파일 개수만큼 반복
+    For i = 1 To 파일명.count
+        
+        strFile = 파일경로(i) & "\" & 파일명(i)
+        
+        '파일 호출
+        Set Obj = GetObject(strFile)
+        Set Wb = Workbooks(Dir(strFile))
+        
+        Call ObjectList(strFile) '---오브젝트 리스트 저장
+        
+        ReDim strSheets(1 To Wb.Sheets.count) '---배열 크기 재지정
+        
+        For j = 1 To UBound(strSheets)
+            
+            strSheets(j) = Wb.Sheets(j).Name
+        
+        Next
+        
+        With 시트명(i).Validation
+            .Delete
+            .Add _
+                Type:=xlValidateList, _
+                AlertStyle:=xlValidAlertStop, _
+                Formula1:=Join(strSheets, ",")
+            
+        End With
+        
+        시트명(i) = strSheets(1)
+        
+        Erase strSheets '---배열 초기화
+        
+    Next
+
+'종료 처리
+exit_sub:
+
+    Call UpdateEnd
+    
 End Sub
