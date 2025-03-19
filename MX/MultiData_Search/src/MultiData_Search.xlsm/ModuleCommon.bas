@@ -24,7 +24,7 @@ Public Sub SetRange()
     With Sheets("Main")
                 
         '파일 이름 영역 지정
-        Set 파일명 = .Range("C5")
+        Set 파일명 = .Range("C7")
         
         '파일 이름 다중 입력 시 처리
         If 파일명.Offset(1, 0) <> "" Then
@@ -39,9 +39,9 @@ Public Sub SetRange()
         
         Set 머릿글 = 파일명.Offset(0, 2) '--- 머릿글 행 영역 지정
     
-        Set 검색어 = .Range("B17") '---검색 값 영역 지정
+        Set 검색어 = .Range("B21") '---검색 값 영역 지정
         
-        Set 검색결과 = .Range("B20") '---검색 결과 표시 영역 지정
+        Set 검색결과 = .Range("B24") '---검색 결과 표시 영역 지정
         
     End With
     
@@ -92,12 +92,19 @@ Public Sub ObjectList(strFile)
         
             오브젝트.Offset(Range("오브젝트").count, 0) = strFile
             ThisWorkbook.Names("오브젝트").RefersTo = Range(Range("오브젝트"), 오브젝트.End(xlDown)) '---파일 개수가 2개 이상인 경우 '오브젝트' 영역 재지정
-        
+                        
         End If
         
     End If
+    
+    For k = 1 To Range("오브젝트").count
+        
+    Next
 End Sub
 
+Sub test()
 
+
+End Sub
 
 

@@ -200,9 +200,7 @@ Public Sub CloseFile()
     '파일 미호출 상태인 경우 종료
     If Range("오브젝트")(1) = "" Then
         
-        'MsgBox "닫을 파일이 존재하지 않습니다."
         Exit Sub
-        
     End If
         
     Call SetRange '---주 사용 영역 지정
@@ -221,9 +219,6 @@ Public Sub CloseFile()
         ' '오브젝트' 영역 데이터 초기화
         Range(Range("오브젝트"), Range("오브젝트").Offset(0, 2)).Clear
         ThisWorkbook.Names("오브젝트").RefersTo = 오브젝트
-    
-    Else
-        'MsgBox "닫을 파일이 존재하지 않습니다."
         
     End If
     
@@ -365,14 +360,9 @@ Public Sub SearchSheet()
     
     Call UpdateStart
     Call SetRange
-    
-    '사용자 입력 데이터 없는 경우 처리
-    If CheckUserData = True Then
         
-        GoTo exit_sub
-    
     '경로에 파일 없는 경우 처리
-    ElseIf CheckFile() = True Then
+    If CheckFile() = True Then
                 
         GoTo exit_sub
         
