@@ -4,12 +4,12 @@ Attribute VB_Name = "ModuleDesign"
 '=====================================================================
 
 '###디자인 전역 변수###
-Public category_sel_color As Variant
-Public user_input_color As Variant
+Public colorCategorySel As Variant
+Public colorUserInput As Variant
 
 '=====================================================================
 '좌측 메뉴 숨기기
-Sub home_menu_hide()
+Sub HideHomeMenu()
 
     Dim menu_range As Range '---메뉴 영역 선언
         
@@ -30,26 +30,26 @@ End Sub
 
 '=====================================================================
 '색상 변수 선언
-Public Sub color_set()
+Public Sub SetColor()
 
-    category_sel_color = RGB(166, 201, 236) '---사용자가 선택 시 표시되는 색상
+    colorCategorySel = RGB(166, 201, 236) '---사용자가 선택 시 표시되는 색상
         
-    user_input_color = RGB(255, 178, 111) '---사용자가 입력할 수 있는 색상
+    colorUserInput = RGB(255, 178, 111) '---사용자가 입력할 수 있는 색상
     
 End Sub
 
 '=====================================================================
 '검색된 데이터가 없을 때 데이터 영역 숨기기
-Public Function home_data_hide()
+Public Function HideHomeData()
        
     Dim data_range As Range '---데이터가 표시되는 영역 변수
     
-    Call range_set '---공통으로 사용하는 영역 위치 호출
+    Call SetRange '---공통으로 사용하는 영역 위치 호출
     
     Set data_range = Sheets("Home").Columns("I:K") '---데이터 영역 저장
     
     '---현재 호출된 데이터 여부 체크 후 숨김, 표시 처리
-    If act_sheet_name = Empty Then
+    If 현재프리셋 = Empty Then
         
         data_range.Hidden = True
         
@@ -65,16 +65,16 @@ End Function
 
 '=====================================================================
 '열 선택 영역 숨기기
-Public Sub HideCategoryRng()
+Public Sub HideHomeCategory()
     
     '---열 선택 영역 선언
     Dim rngCategory As Range
     
     Set rngCategory = Sheets("Home").Columns("G:H")
     
-    Call range_set '---공통으로 사용하는 영역 위치 호출
+    Call SetRange '---공통으로 사용하는 영역 위치 호출
     
-    If act_sheet_name = Empty Then
+    If 현재프리셋 = Empty Then
         
         If rngCategory.Hidden = False Then
             

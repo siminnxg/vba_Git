@@ -18,7 +18,8 @@ Private Sub Worksheet_Change(ByVal Target As Range)
         
     Dim shtname As String '---시트명 저장 변수
     Dim data_range As ListObject '----데이터 시트의 전체 데이터 영역 저장 변수
-    Dim search_data As String '---사용자가 검색하려는 열 값 저장 변수
+    Dim strSearchKeyword As String '---사용자가 검색하려는 열 값 저장 변수
+    Dim strSearchData() As String '---사용자가 입력한 검색어
     Dim category_range As Range '--- 선택된 열 저장 변수
     Dim data_adr As Range '---데이터 시트 내 카테고리 행을 제외한 영역 저장 변수
     Dim result As Range '---데이터 시트 내 검색된 데이터 위치 저장 변수
@@ -26,33 +27,41 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     '###동작 시작###
    
     '---화면 업데이트 중지
-    Call update_start
+    Call UpdateStart
     
     '---공통으로 사용하는 영역 위치, 색상 호출
-    Call range_set
-    Call color_set
+    Call SetRange
+    Call SetColor
     
     '---에러가 발생하면 exit_error 로 이동
-    On Error GoTo exit_error
+    'On Error GoTo exit_error
                 
     '---선택된 열이 1개도 없으면 종료
-    If search_category_start.Value = "" Then '---선택된 열 시작 위치 공백 확인
-        Call update_end
+    If 검색키워드_시작.Value = "" Then '---선택된 열 시작 위치 공백 확인
+        Call UpdateEnd
         Exit Sub
     End If
     
     '---선택된 열 영역 확인
-    Set category_range = Range(search_category_start, search_category_end)
+    Set category_range = Range(검색키워드_시작, 검색키워드_끝)
     
     '---사용자가 검색할 영역 확인
-    Set serch_range = Range(search_user_start, search_category_end.Offset(-1, 0)) '---선택된 열 기준으로 검색 영역 할당
+    Set serch_range = Range(검색어_시작, 검색키워드_끝.Offset(-1, 0)) '---선택된 열 기준으로 검색 영역 할당
     
     '---사용자 입력 확인
     If Not Intersect(Target, serch_range) Is Nothing Then
-               
-        shtname = CStr(act_sheet_name.Value)
+                
+        strSearchData = Split(Target.Value, ",") '---검색어 쉼표 기준으로 배열에 분리하여 저장
+        
+'        For i = 0 To UBound(strSearchData)
+'
+'            strSearchData(i) = "=*" & strSearchData(i) & "*"
+'
+'        Next
+                   
+        shtname = CStr(현재프리셋.Value)
                         
-        search_data = Target.Offset(1, 0)
+        strSearchKeyword = Target.Offset(1, 0)
         
         Set data_range = Sheets(shtname).ListObjects(1)
         
@@ -61,7 +70,7 @@ Private Sub Worksheet_Change(ByVal Target As Range)
         Range("DATA").FormatConditions.Delete
         
         '---데이터가 불러와져있는 영역 초기화
-        Range(search_category_start.Offset(1, 0), search_category_start.Offset(Range("DATA").Rows.Count, category_range.Cells.Count - 1)).ClearContents
+        Range(검색키워드_시작.Offset(1, 0), 검색키워드_시작.Offset(Range("DATA").Rows.Count, category_range.Cells.Count - 1)).ClearContents
                                         
         '---다중 영역 선택 후 delete 동작 시 방어
         If Target.Cells.Count > 1 Then
@@ -78,26 +87,38 @@ Private Sub Worksheet_Change(ByVal Target As Range)
         '---검색한 값이 없는 경우 필터 해제
         If Target.Value = "" Then
             Sheets(shtname).Range("A1").AutoFilter _
-            Field:=data_range.ListColumns(search_data).Index
+            Field:=data_range.ListColumns(strSearchKeyword).Index
             
             Target.Offset(1, 0).Interior.Color = vbWhite
             Range("notice") = "검색할 내용을 입력해주세요."
             Range("notice").Font.Color = vbBlack
             
-        '---검색한 값이 존재하면 데이터 시트 필터 적용
+        '검색한 값이 존재하면 데이터 시트 필터 적용
         Else
-            Sheets(shtname).Range("A1").AutoFilter _
-            Field:=data_range.ListColumns(search_data).Index, _
-            Criteria1:="=*" & Target.Value & "*", _
-            Criteria2:=Target.Value, _
-            Operator:=xlOr
+            '2개 이상 검색 시 일치하는 값만 확인
+            If UBound(strSearchData) > 0 Then
+                
+                Sheets(shtname).Range("A1").AutoFilter _
+                Field:=data_range.ListColumns(strSearchKeyword).Index, _
+                Criteria1:=Array(strSearchData), _
+                Operator:=xlFilterValues
+            
+            Else
+                
+                Sheets(shtname).Range("A1").AutoFilter _
+                Field:=data_range.ListColumns(strSearchKeyword).Index, _
+                Criteria1:="=*" & Target.Value & "*", _
+                Criteria2:=Target.Value, _
+                Operator:=xlOr
+                
+            End If
                         
-            Target.Offset(1, 0).Interior.Color = category_sel_color
+            Target.Offset(1, 0).Interior.Color = colorCategorySel
             
             '---사용자가 입력한 행 고정 표시
-            If search_FixRow.Value > 0 Then
+            If 고정행.Value > 0 Then
                 
-                For i = 1 To search_FixRow.Value
+                For i = 1 To 고정행.Value
                 
                  Sheets(shtname).Rows(i).Hidden = False
                  
@@ -109,7 +130,7 @@ Private Sub Worksheet_Change(ByVal Target As Range)
             If data_range.Range.SpecialCells(xlCellTypeVisible).Count = data_range.HeaderRowRange.Count Then '---화면에 첫행을 제외한 행이 보이는지 확인
                 
                 '---Home 시트에 데이터가 불러와져있는 영역 초기화
-                Range(search_category_start.Offset(1, 0), search_category_start.Offset(data_adr.Rows.Count + 1, data_adr.Columns.Count + 1)).Clear
+                Range(검색키워드_시작.Offset(1, 0), 검색키워드_시작.Offset(data_adr.Rows.Count + 1, data_adr.Columns.Count + 1)).Clear
                 
                 Range("notice") = "검색된 내용이 없습니다."
                 Range("notice").Font.Color = vbRed
@@ -121,33 +142,32 @@ Private Sub Worksheet_Change(ByVal Target As Range)
             
             Range("notice") = "검색되었습니다."
             Range("notice").Font.Color = vbBlack
-            
         End If
 
 '---데이터 시트 값을 Home 검색 영역에 가져오기
 data_paste:
         '---검색 카테고리 있는 내용만 가져오기
         For i = 1 To category_range.Columns.Count   '---카테고리 수만큼 반복
-            search_data = search_category_start.Offset(0, i - 1)
+            strSearchKeyword = 검색키워드_시작.Offset(0, i - 1)
             
             '---검색된 내용을 열 단위로 result 변수에 할당
             If result Is Nothing Then
-                Set result = data_range.ListColumns(search_data).Range
+                Set result = data_range.ListColumns(strSearchKeyword).Range
             Else
-                Set result = Union(result, data_range.ListColumns(search_data).Range)
+                Set result = Union(result, data_range.ListColumns(strSearchKeyword).Range)
             End If
         Next
           
-        Call update_start
+        Call UpdateStart
         
         '---테스트 시 배열로 데이터 가져오는 것보다 빠른 속도로 copy, paste 사용됨
         result.SpecialCells(xlCellTypeVisible).Copy '---result 변수에 저장된 영역 복사
-        search_category_start.PasteSpecial xlPasteValues '---선택된 열 시작 지점에 붙여넣기
+        검색키워드_시작.PasteSpecial xlPasteValues '---선택된 열 시작 지점에 붙여넣기
                      
         Application.CutCopyMode = False
         
         '---DATA 이름 범위 재설정
-        ThisWorkbook.Names("DATA").RefersTo = Range(Selection, search_user_start)
+        ThisWorkbook.Names("DATA").RefersTo = Range(Selection, 검색어_시작)
         
         '---DATA 이름 범위에 조건부 서식 적용
         With Range("DATA").FormatConditions.Add( _
@@ -168,13 +188,13 @@ data_paste:
 '---종료 처리
 exit_sub:
     
-    Call update_end
+    Call UpdateEnd
     Exit Sub
 
 '---에러 발생 시 처리
 exit_error:
     MsgBox ("오류가 발생했습니다. 오류 코드 : " & Err.Number & " " & Err.Description)
-    Call update_end
+    Call UpdateEnd
 
 End Sub
 
@@ -188,32 +208,32 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
     '###동작 시작###
     
     '---공통으로 사용하는 영역 위치, 색상 호출
-    Call range_set
-    Call color_set
+    Call SetRange
+    Call SetColor
     
     '---선택할 열 없는 경우 동작하지 않음
-    If act_category_start = "" Then
+    If 열목록_시작 = "" Then
     
         Exit Sub
         
     End If
     
     '---선택한 셀이 열 리스트 영역 밖이라면 미 동작 처리
-    If Not Intersect(Target, act_sheet_name) Is Nothing Or Not Intersect(Target, Range("F:F")) Is Nothing Or Not Intersect(Target, Range("H:H")) Is Nothing Or Not Intersect(Target, act_category_end.Offset(1, 0)) Is Nothing Then
+    If Not Intersect(Target, 현재프리셋) Is Nothing Or Not Intersect(Target, Range("F:F")) Is Nothing Or Not Intersect(Target, Range("H:H")) Is Nothing Or Not Intersect(Target, 열목록_끝.Offset(1, 0)) Is Nothing Then
         
         Exit Sub
         
     '---선택한 셀이 열 리스트 안이라면 동작
-    ElseIf Not Intersect(Target, act_category_list) Is Nothing Then
+    ElseIf Not Intersect(Target, 열목록) Is Nothing Then
     
         '---셀 색상 확인 및 색 적용
-        If Target.Interior.Color = category_sel_color Then
+        If Target.Interior.Color = colorCategorySel Then
         
             Target.Interior.Color = vbWhite
             
         Else
         
-            Target.Interior.Color = category_sel_color
+            Target.Interior.Color = colorCategorySel
 
         End If
     End If
@@ -350,34 +370,34 @@ End Sub
 '파일 검색 버튼
 Private Sub Button_File_search_Click()
 
-    Call File_search
+    Call SearchFile
     
 End Sub
 
 '파일 불러오기 버튼
 Private Sub Button_File_load_Click()
 
-    Call FIle_Load
+    Call LoadFile
     
 End Sub
 
 '프리셋 불러오기 버튼
 Private Sub Button_Preset_load_Click()
 
-    Call preset_load
+    Call LoadPreset
     
 End Sub
 
 '프리셋 제거 버튼
 Private Sub Button_Preset_delete_Click()
 
-    Call preset_delete
+    Call DeletePreset
     
 End Sub
 
 '프리셋 수정 버튼
 Private Sub Button_Preset_edit_Click()
     
-    Call preset_edit
+    Call EditPreset
     
 End Sub

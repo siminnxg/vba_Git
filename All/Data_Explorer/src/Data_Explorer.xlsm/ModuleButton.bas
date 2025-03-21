@@ -4,24 +4,24 @@ Attribute VB_Name = "ModuleButton"
 '=====================================================================
 
 '카테고리 추가 버튼
-Public Sub button_category_add()
+Public Sub Button_AddCategory()
         
-    Call update_start
+    Call UpdateStart
     
-    If category_add = 0 Then
+    If AddCategory = 0 Then
         
         GoTo event_exe
         
     End If
         
-    Call update_end
+    Call UpdateEnd
     Exit Sub
 
 '---선택된 열 존재 시 처리
 event_exe:
     
-    Call update_end
-    search_user_start.Value = "" '---Home 시트 이벤트 동작
+    Call UpdateEnd
+    검색어_시작.Value = "" '---Home 시트 이벤트 동작
         
     '---가져온 데이터 열 너비 자동 맞춤
     Range("DATA").EntireColumn.AutoFit
@@ -30,46 +30,46 @@ End Sub
 
 '=====================================================================
 '카테고리 선택 초기화 버튼
-Public Sub button_category_clickreset()
+Public Sub Button_ResetCategory()
 
-    Call update_start
+    Call UpdateStart
     
-    Call category_reset
+    Call ResetCategory
         
-    Call update_end
+    Call UpdateEnd
 
 End Sub
 
 '=====================================================================
 '카테고리 전체 선택 버튼
-Public Sub button_category_allselect()
+Public Sub Button_SelectAllCategory()
     
-    Call update_start
+    Call UpdateStart
     
-    category_all_select
+    SelectAllCategory
                
-    Call update_end
+    Call UpdateEnd
 
 End Sub
 
 '=====================================================================
 '검색 초기화 버튼
-Public Sub button_search_reset()
+Public Sub Button_ResetSearch()
 
-    Call update_start
+    Call UpdateStart
     
-    If search_reset = 0 Then
+    If ResetSearch = 0 Then
         
         GoTo event_exe
         
     End If
             
-    Call update_end
+    Call UpdateEnd
 
 '---선택된 열 존재 시 처리
 event_exe:
 
-    Call update_end
-    search_user_start.Value = "" '---Home 시트 이벤트 동작
+    Call UpdateEnd
+    검색어_시작.Value = "" '---Home 시트 이벤트 동작
 End Sub
 
