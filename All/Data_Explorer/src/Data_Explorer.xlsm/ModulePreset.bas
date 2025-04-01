@@ -70,32 +70,34 @@ Public Sub LoadPreset()
     
     '###변수 선언###
     
-    Dim preset_select As Variant '---현재 선택된 프리셋 값 저장 변수
-    Dim search_row As Variant '---etc 시트에서 현재 선택된 프리셋의 위치 저장 변수
-    Dim category_adr As Variant '---프리셋에 저장되어있던 선택된 열들의 위치 저장 변수
+    Dim varPresetSel As Variant '---현재 선택된 프리셋 값 저장 변수
+    Dim varSearchRow As Variant '---etc 시트에서 현재 선택된 프리셋의 위치 저장 변수
+    Dim varCategoryAdr As Variant '---프리셋에 저장되어있던 선택된 열들의 위치 저장 변수
         
     '###동작 시작###
     
-    '---화면 업데이트 중지
+    '화면 업데이트 중지
     Call UpdateStart
     
-    '---공통으로 사용하는 영역 위치, 색상 호출
+    '공통으로 사용하는 영역 위치, 색상 호출
     Call SetRange
     Call SetColor
     
-    '---에러가 발생하면 종료
+    '에러가 발생하면 종료
+    
     On Error GoTo exit_error
     
     With Sheets("etc").PivotTables("프리셋").DataBodyRange
-    '---현재 선택된 프리셋 값 변수에 저장
-        preset_select = CStr(.Cells(1))
         
-        If preset_select = "Preset_Header" Then
+        varPresetSel = CStr(.Cells(1)) '---현재 선택된 프리셋 값 변수에 저장
+        
+        '프리셋 관련 예외처리
+        If varPresetSel = "Preset_Header" Then
             
             MsgBox ("프리셋을 선택해주세요,")
             GoTo exit_sub
                             
-        ElseIf preset_select = "비어있음" Then
+        ElseIf varPresetSel = "비어있음" Then
             
             MsgBox ("프리셋이 존재하지 않습니다.")
             GoTo exit_sub
@@ -108,48 +110,39 @@ Public Sub LoadPreset()
         End If
     End With
     
-    '--- sub : 검색, 열 선택 영역 초기화
+    Call HideSearchSht(False)
+    
+    '기존 검색 데이터 저장 후 초기화
+    Call SaveSearch
     Call ClearHomeData
     
     With Sheets("etc")
-        '---etc 시트내에서 프리셋 위치 찾기
-        search_row = .Range("preset_list").Find(what:=preset_select, lookat:=xlWhole).Row
+        'etc 시트내에서 프리셋 위치 찾기
+        varSearchRow = .Range("preset_list").Find(what:=varPresetSel, lookat:=xlWhole).Row
         
-        '---프리셋 값 붙여넣기
-        프리셋명 = .Cells(search_row, 2).Value
-        파일경로 = .Cells(search_row, 3).Value
-        파일명 = .Cells(search_row, 4).Value
-        시트명 = .Cells(search_row, 5).Value
-        category_adr = .Cells(search_row, 6).Value
+        '프리셋 값 붙여넣기
+        프리셋명 = .Cells(varSearchRow, 2).Value
+        파일경로 = .Cells(varSearchRow, 3).Value
+        파일명 = .Cells(varSearchRow, 4).Value
+        시트명 = .Cells(varSearchRow, 5).Value
+        varCategoryAdr = .Cells(varSearchRow, 6).Value
         
     End With
     
-    '---시트 목록 셀에 드롭다운 제거
+    '시트 목록 셀에 드롭다운 제거
     시트명.Validation.Delete
     
-     '---입력한 경로에 파일 존재 체크
-    If CheckFile(파일경로 & "\" & 파일명) = False Then
-        
-        MsgBox (파일경로 & " 경로에 " & 파일명 & " 파일이 존재하지 않아 기존 내용으로 불러옵니다.")
+    Call SearchCategory(varPresetSel)
     
-    Else
-        
-        '---프리셋 이름으로 생성된 시트의 listobject 새로고침
-        Sheets(preset_select).ListObjects(1).QueryTable.Refresh BackgroundQuery:=False
+    '열 선택 상태를 저장해놓은 경우 호출
+    If Not varCategoryAdr = "" Then
     
-    End If
-    
-    Call SearchCategory(preset_select)
-    
-    '---열 선택 상태를 저장해놓은 경우 호출
-    If Not category_adr = "" Then
-    
-        Sheets("Home").Range(category_adr).Interior.Color = colorCategorySel
+        Sheets("Search").Range(varCategoryAdr).Interior.Color = colorCategorySel
         
     End If
     
-    '---선택된 열 적용
-    Call Button_AddCategory
+    '선택된 열 적용
+    Call AddCategory
     
 '---종료 처리
 exit_sub:
@@ -171,8 +164,8 @@ End Sub
 '=====================================================================
 Public Sub DeletePreset()
 
-    Dim preset_select As String
-    Dim search_row As Variant
+    Dim varPresetSel As String
+    Dim varSearchRow As Variant
     
     Call UpdateStart
     Call SetRange
@@ -220,20 +213,19 @@ Public Sub DeletePreset()
                 열목록.Clear
                 현재프리셋.ClearContents
                 
-                '---열 선택 영역 숨기기
-                Call HideHomeCategory
-                
+                Call HideSearchSht(True) '---검색 영역 숨기기
             End If
             
             '---프리셋 제거 시 시트, 쿼리 함께 제거
+            Sheets(CStr(.Cells(i))).Visible = True
             Sheets(CStr(.Cells(i))).Delete
             ActiveWorkbook.Queries(CStr(.Cells(i))).Delete
             
             '---제거하려는 프리셋명 etc 시트에서 위치 검색
-            search_row = Range("preset_list").Find(what:=.Cells(i), lookat:=xlWhole).Row
+            varSearchRow = Range("preset_list").Find(what:=.Cells(i), lookat:=xlWhole).Row
             
             '---etc 프리셋 리스트 영역에서 프리셋 내용 제거
-            Range(Range("preset_list")(search_row), Range("preset_list")(search_row).Offset(0, 4)).Delete Shift:=xlUp
+            Range(Range("preset_list")(varSearchRow), Range("preset_list")(varSearchRow).Offset(0, 5)).Delete Shift:=xlUp
             
             '---남아있는 프리셋 없는 경우 처리
             If Range("preset_list").Cells.Count = 1 Then
@@ -254,9 +246,6 @@ Public Sub DeletePreset()
     '---데이터 이름 영역 재지정
     ThisWorkbook.Names("DATA").RefersTo = 검색어_시작
     
-    '---검색 영역 숨기기
-    Call HideHomeData
-    
     '---시스템 문구 노출
     Application.DisplayAlerts = True
 
@@ -270,7 +259,7 @@ End Sub
 Public Sub EditPreset()
     
     Dim strFileAdr As String
-    Dim search_row As Variant
+    Dim varSearchRow As Variant
         
     Call UpdateStart
     
@@ -303,10 +292,10 @@ Public Sub EditPreset()
         For i = 1 To .Cells.Count
             
             '---제거하려는 프리셋명 etc 시트에서 위치 검색
-            search_row = Range("preset_list").Find(what:=.Cells(i), lookat:=xlWhole).Row
+            varSearchRow = Range("preset_list").Find(what:=.Cells(i), lookat:=xlWhole).Row
             
             '---etc 프리셋 리스트 영역에서 프리셋 경로 변경
-            Range("preset_list")(search_row).Offset(0, 1).Value = strFileAdr
+            Range("preset_list")(varSearchRow).Offset(0, 1).Value = strFileAdr
             
         Next
         
@@ -318,3 +307,34 @@ exit_sub:
     
 End Sub
 
+
+Public Sub RefreshPreset()
+    
+    Call SetRange
+    
+    With Range("preset_list")
+        If .Cells.Count < 2 Then
+            
+            MsgBox "프리셋이 존재하지 않습니다."
+            Exit Sub
+            
+        End If
+        
+        For i = 2 To .Cells.Count
+            '입력한 경로에 파일 존재 체크
+            If CheckFile(파일경로 & "\" & 파일명) = False Then
+                
+                MsgBox (파일경로 & " 경로에 " & 파일명 & " 파일이 존재하지 않습니다.")
+            
+            Else
+                
+                '프리셋 이름으로 생성된 시트의 listobject 새로고침
+                Sheets(.Cells(i).Value).ListObjects(1).QueryTable.Refresh BackgroundQuery:=False
+            
+            End If
+        Next
+        
+        MsgBox "최신 데이터를 갱신하였습니다."
+        
+    End With
+End Sub

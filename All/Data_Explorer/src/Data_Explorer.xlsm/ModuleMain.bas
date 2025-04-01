@@ -8,21 +8,18 @@ Public Sub LoadFile()
 
     '###변수 선언###
     
-    Dim var As Variant '---임시 변수
-    Dim File_name_val As Variant '---확장자 제거한 파일명
+    Dim varTmp As Variant '---임시 변수
+    Dim varFileName As Variant '---확장자 제거한 파일명
     
     '###동작 시작###
     
-    '---에러가 발생하면 종료
+    '에러가 발생하면 종료
     On Error GoTo exit_error
-    
-    '---sub : 화면 업데이트 중지
+        
     Call UpdateStart
-    
-    '---sub : 공통으로 사용하는 영역 위치 호출
     Call SetRange
     
-    '---사용자 입력 영역 공백 시 알림 표시
+    '사용자 입력 영역 공백 시 알림 표시
     If File_adr = "" Or File_name = "" Or sheet_name = "" Then
     
         MsgBox "파일 정보를 모두 입력해주세요." & vbCrLf & "(파일 경로, 이름, 시트)"
@@ -30,7 +27,7 @@ Public Sub LoadFile()
 
     End If
     
-    '---function : 프리셋 공백 시 임시 이름 지정
+    '프리셋 공백 시 임시 이름 지정
     If preset = "" Or preset = "프리셋" Then
         
         preset = CheckPresetName
@@ -38,50 +35,45 @@ Public Sub LoadFile()
     
     End If
     
-    '---파일 이름에서 확장자(.xl~) 분리
-    var = Split(File_name, ".")
-    File_name_val = var(0)
-    
-    '---function : 프리셋 이름으로 시트, 쿼리 이미 생성되어 있다면 종료
+    '프리셋 이름으로 시트, 쿼리 이미 생성되어 있다면 종료
     If CheckQuery = 1 Then
         
         MsgBox ("동일한 프리셋명이 존재합니다.")
         GoTo exit_sub
     
-    '---function : 입력한 경로에 파일 존재 여부 체크
+    '입력한 경로에 파일 존재 여부 체크
     ElseIf CheckFile(File_adr & "\" & File_name) = False Then
         
         MsgBox (File_adr & " 경로에 " & File_name & " 파일이 존재하지 않습니다.")
         GoTo exit_sub
     
-    '---파일이 엑셀 형식이 아닌 경우 처리
+    '파일이 엑셀 형식이 아닌 경우 처리
     ElseIf InStr(File_name, ".xl") = 0 Then
      
          MsgBox "파일이 엑셀 형식이 아닙니다."
          GoTo exit_sub
          
     Else
-    
-        '---sub : 열 선택, 검색 영역 초기화
+        'Search 시트 표시 후 선택
+        Call HideSearchSht(False)
+        Sheets("Search").Select
+        
+        '기존 검색 데이터 저장 후 초기화
+        Call SaveSearch
         Call ClearHomeData
                 
-        '---프리셋 이름으로 시트 생성
-        ActiveWorkbook.Worksheets.Add after:=Sheets("Home")
+        '프리셋 이름으로 시트 생성
+        ActiveWorkbook.Worksheets.Add after:=Sheets("Search")
         ActiveSheet.Name = preset
         
-        '---입력된 경로를 바탕으로 파일 불러오기
+        '입력된 경로를 바탕으로 파일 불러오기
         ActiveWorkbook.Queries.Add Name:=preset, _
         Formula:="let Source = Excel.Workbook(File.Contents(""" & File_adr & "\" & File_name & """), null, true), #""" & _
                 sheet_name & "_Sheet"" = Source{[Item=""" & sheet_name & """, Kind=""Sheet""]}[Data], " & _
                 "FilteredData = Table.PromoteHeaders(#""" & sheet_name & "_Sheet"") " & _
         "in FilteredData"
-
-                
-'                "모든열변경 = Table.TransformColumnTypes(FilteredData, " & _
-'        "List.Transform(Table.ColumnNames(FilteredData), each {_, type text})) " & _
-'        "in 모든열변경"
         
-        '---연결된 쿼리 데이터 가져오기
+        '연결된 쿼리 데이터 가져오기
         With ActiveSheet.ListObjects.Add(SourceType:=0, Source:= _
             "OLEDB;Provider=Microsoft.Mashup.OleDb.1;Data Source=$Workbook$;Location=" & preset & ";Extended Properties=""""" _
             , Destination:=Range("$A$1")).QueryTable
@@ -90,22 +82,21 @@ Public Sub LoadFile()
             .Refresh BackgroundQuery:=False
         End With
         
-        '---sub : 프리셋 저장
-        Call preset_save
+        Call SavePreset '---프리셋 저장
         
+        Sheets(preset).Visible = 2 '---시트 표시
+    
     End If
         
-    Sheets("Home").Select
+    Sheets("Search").Select
     
-    '---파일 호출 시 열 선택 영역 강제 표시
-    Sheets("Home").Columns("G:H").Hidden = False
-    Sheets("Home").Shapes("Pic_Open").Visible = False
-    Sheets("Home").Shapes("PIC_Close").Visible = True
+    '파일 호출 시 열 선택 영역 강제 표시
+    Call HideHomeCategory(False)
     
-    '---sub : 카테고리 리스트 호출
+    '카테고리 리스트 호출
     Call SearchCategory(preset)
     
-    '---function : 카테고리 전체 선택 및 추가
+    '카테고리 전체 선택 및 추가
     If SelectAllCategory = 0 Then
         
         varCheckUpdate = Empty
@@ -114,14 +105,14 @@ Public Sub LoadFile()
         
     End If
 
-'---종료 처리
+'종료 처리
 exit_sub:
     
     Call UpdateEnd
     Range("A1").Select
     Exit Sub
     
-'---에러 발생 처리
+'에러 발생 처리
 exit_error:
     
     '---시트명 오류 시 처리 (시트명 조건 체크, 쿼리명 조건 체크)
@@ -177,15 +168,15 @@ Public Sub SearchFile()
     '---etc시트 내 시트명 저장 영역 초기화
     Sheets("etc").Range("A:A").Clear
     
-    '---파일 경로가 입력되어 있으면 해당 경로로 지정
-    '---(잘못된 경로 입력 시 자동으로 무시됨)
+    '파일 경로가 입력되어 있으면 해당 경로로 지정
+    '(잘못된 경로 입력 시 자동으로 무시)
     If File_adr <> "" Then
      
          Application.FileDialog(msoFileDialogFilePicker).InitialFileName = File_adr
          
     End If
     
-    '---파일 탐색기 오픈
+    '파일 탐색기 오픈
      With Application.FileDialog(msoFileDialogFilePicker)
          .Filters.Add "엑셀파일", "*.xls; *.xlsx; *.xlsm" '---엑셀 형식으로 지정
          .Show
@@ -282,15 +273,14 @@ Public Sub SearchCategory(sheet_name)
     '###동작 시작###
     
     현재프리셋.Value = sheet_name
-    
-    '---열 선택, 검색 영역 숨기기
-    Call HideHomeData
+        
+    Call HideSearchSht(False)
     
     '---카테고리 리스트 영역 초기화
     열목록.Clear
     
     '---데이터 시트의 첫번째 행 영역 설정
-    Set category_list = Sheets(sheet_name).Range("A1", Sheets(sheet_name).Range("A1").End(xlToRight))
+    Set category_list = Sheets(sheet_name).ListObjects(1).HeaderRowRange
     
     '---배열 크기 재정의
     ReDim category(category_list.Columns.Count - 1)
@@ -338,10 +328,12 @@ Public Function AddCategory()
     
     '###변수 선언###
     
-    Dim now_cell As Range
-    Dim category_count As Variant
+    Dim rngSel As Range '---현재 선택된 셀
     Dim select_category As Range
+    
+    Dim category_count As Variant
     Dim search_row As Variant
+    Dim varCol As Variant
     
     '###동작 시작###
     
@@ -365,43 +357,47 @@ Public Function AddCategory()
     category_count = 0
     
     If 검색키워드_시작 <> Empty Then
-        
-        '---sub : 필터 여부 확인 후 초기화
-        Call ResetSearch
-            
-        '---검색, 카테고리 영역 초기화
-        Range("DATA").Clear
-        
+
+        'Call ResetSearch '필터 여부 확인 후 초기화
+
+        Range("DATA").Clear '검색 영역 초기화
+
     End If
     
-    '---선택된 카테고리 체크
+    Sheets(현재프리셋.Value).UsedRange.EntireColumn.Hidden = False '---열 숨기기 취소
+    
+    '선택된 카테고리 체크
     For i = 1 To 열목록.Rows.Count
         
-        '---조회중인 셀 선언
-        Set now_cell = 열목록_시작.Offset(i - 1, 0)
+        '조회중인 셀 선언
+        Set rngSel = 열목록_시작.Offset(i - 1, 0)
         
-        '---색상으로 선택 여부 체크
-        If Not now_cell.Interior.Color = vbWhite Then
+        '색상으로 선택 여부 체크
+        If Not rngSel.Interior.Color = vbWhite Then
             
-            '---선택된 열 영역에 한 셀 씩 추가
-            검색키워드_시작.Offset(0, category_count).Value = now_cell.Value
+            검색키워드_시작.Offset(0, category_count).Value = rngSel.Value '---선택된 열 영역에 한 셀 씩 추가
+                        
+            검색어_시작.Offset(0, category_count).Interior.Color = colorUserInput '---선택된 열 영역 색 적용
+                        
+            category_count = category_count + 1 '---선택된 열 수량 체크
             
-            '---선택된 열 영역 색 적용
-            검색어_시작.Offset(0, category_count).Interior.Color = colorUserInput
-            
-            '---열 수량 체크
-            category_count = category_count + 1
-            
-            '---select_category 변수에 선택된 열 주소 저장
+            'select_category 변수에 선택된 열 주소 저장
             If select_category Is Nothing Then
-            
-                Set select_category = now_cell
+                Set select_category = rngSel
                 
             Else
-            
-                Set select_category = Union(select_category, now_cell)
+                Set select_category = Union(select_category, rngSel)
                 
             End If
+        
+        '미 선택 상태인 경우 데이터 시트에서 열 숨기기
+        Else
+            With Sheets(현재프리셋.Value)
+            
+                varCol = .ListObjects(1).ListColumns(rngSel.Value).Index
+                .Columns(varCol).Hidden = True
+                
+            End With
         End If
     Next
     
@@ -414,15 +410,18 @@ Public Function AddCategory()
         AddCategory = 1
         
     Else
-    
-        '---카테고리 추가된 열 너비 맞춤
-        Range(검색키워드_시작, 검색키워드_시작.Offset(0, category_count - 1)).EntireColumn.AutoFit
         
-        '---검색 영역 텍스트 타입으로 고정
+        Call LoadSearch
+        Call PasteData
+        Call SetRange
+        
+        '카테고리 추가된 열 너비 맞춤
+        검색키워드.EntireColumn.AutoFit
+        
+        '검색 영역 텍스트 타입으로 고정
         Range(검색어_시작, 검색어_시작.Offset(0, category_count - 1)).NumberFormatLocal = "@"
         
         AddCategory = 0
-        
     End If
     
     With Sheets("etc")
@@ -496,46 +495,4 @@ Public Function SelectAllCategory()
     열목록.Interior.Color = colorCategorySel
     SelectAllCategory = 0
 
-End Function
-
-'=====================================================================
-'매크로 : ResetSearch
-'대상 시트 : Home 시트
-'동작 : 검색 영역 검색 초기화 버튼, 검색중이던 내용 초기화 및 데이터 시트 필터 해제
-'=====================================================================
-Public Function ResetSearch()
-    
-    'ResetSearch = 1 : 선택된 열이 없음
-    'ResetSearch = 0 : 정상 동작
-        
-    '---공통으로 사용하는 영역 위치 호출
-    Call SetRange
-    
-    '---검색란 초기화
-    Range(검색어_시작, 검색키워드_시작.End(xlToRight).Offset(-1, 0)).ClearContents
-    
-    '---선택된 열 색 적용 초기화
-    Range(검색키워드_시작, 검색키워드_시작.End(xlToRight)).ClearFormats
-    
-    '---선택된 열이 존재하지 않으면 실행 종료
-    If 검색키워드_시작 = "" Then
-    
-        Range("notice") = "선택된 카테고리가 존재하지 않습니다."
-        Range("notice").Font.Color = vbRed
-        
-        ResetSearch = 1
-        
-        Exit Function
-        
-    End If
-    
-    '---데이터 시트 영역에 필터가 걸려있다면 해제
-    If Sheets(CStr(현재프리셋.Value)).AutoFilter.FilterMode = True Then
-
-        Sheets(현재프리셋.Value).ShowAllData
-
-    End If
-    
-    ResetSearch = 0
-    
 End Function

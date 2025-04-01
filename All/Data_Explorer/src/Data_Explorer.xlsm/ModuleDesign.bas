@@ -8,27 +8,6 @@ Public colorCategorySel As Variant
 Public colorUserInput As Variant
 
 '=====================================================================
-'좌측 메뉴 숨기기
-Sub HideHomeMenu()
-
-    Dim menu_range As Range '---메뉴 영역 선언
-        
-    Set menu_range = Sheets("Home").Columns("A:D")
-    
-    '---메뉴 현재 숨김 상태 확인 후 숨김, 표시 처리
-    If menu_range.Hidden = True Then
-    
-        menu_range.Hidden = False
-        
-    Else
-    
-        menu_range.Hidden = True
-                
-    End If
-
-End Sub
-
-'=====================================================================
 '색상 변수 선언
 Public Sub SetColor()
 
@@ -40,69 +19,49 @@ End Sub
 
 '=====================================================================
 '검색된 데이터가 없을 때 데이터 영역 숨기기
-Public Function HideHomeData()
-       
-    Dim data_range As Range '---데이터가 표시되는 영역 변수
+Public Function HideSearchSht(booCheck As Boolean)
     
-    Call SetRange '---공통으로 사용하는 영역 위치 호출
-    
-    Set data_range = Sheets("Home").Columns("I:K") '---데이터 영역 저장
-    
-    '---현재 호출된 데이터 여부 체크 후 숨김, 표시 처리
-    If 현재프리셋 = Empty Then
-        
-        data_range.Hidden = True
-        
-    Else
-    
-        data_range.Hidden = False
-        
-    End If
-    
-    Sheets("Home").Range("A1").Select
+    '시트 숨김, 표시 처리
+    With Sheets("Search")
+        If booCheck = True Then
+            .Visible = 2
+        Else
+            .Visible = -1
+            .Select
+        End If
+    End With
     
 End Function
 
 '=====================================================================
 '열 선택 영역 숨기기
-Public Sub HideHomeCategory()
-    
-    '---열 선택 영역 선언
-    Dim rngCategory As Range
-    
-    Set rngCategory = Sheets("Home").Columns("G:H")
-    
-    Call SetRange '---공통으로 사용하는 영역 위치 호출
-    
-    If 현재프리셋 = Empty Then
+Public Sub HideHomeCategory(booCheck As Boolean)
         
-        If rngCategory.Hidden = False Then
-            
-            Sheets("Home").Shapes("Pic_Open").Visible = True
-            Sheets("Home").Shapes("PIC_Close").Visible = False
-        
-            rngCategory.Hidden = True
-        End If
-        
-        Exit Sub
-        
-    End If
+    Dim rngCategory As Range '---열 선택 영역 선언
     
-    '---메뉴 현재 숨김 상태 확인 후 숨김, 표시 처리
-    If rngCategory.Hidden = True Then
+    Set rngCategory = Sheets("Search").Columns("B:C")
     
-        Sheets("Home").Shapes("Pic_Open").Visible = False
-        Sheets("Home").Shapes("PIC_Close").Visible = True
+    Call SetRange
+    
+    '숨김, 표시 처리
+    If booCheck = True Then
+        rngCategory.Hidden = True
         
-        rngCategory.Hidden = False
+        '검색 영역 틀 고정
+        검색키워드_시작.Offset(1, 틀고정.Value).Select
+        ActiveWindow.FreezePanes = False
+        ActiveWindow.FreezePanes = True
+        Range("A1").Select
+        
         
     Else
-    
-        Sheets("Home").Shapes("Pic_Open").Visible = True
-        Sheets("Home").Shapes("PIC_Close").Visible = False
+        rngCategory.Hidden = False
         
-        rngCategory.Hidden = True
-                
+        '열 선택 영역 틀 고정
+        Columns("D:D").Select
+        ActiveWindow.FreezePanes = False
+        ActiveWindow.FreezePanes = True
+        Range("A1").Select
     End If
     
 End Sub

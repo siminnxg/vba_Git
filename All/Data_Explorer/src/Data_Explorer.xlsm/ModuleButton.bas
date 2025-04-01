@@ -7,25 +7,13 @@ Attribute VB_Name = "ModuleButton"
 Public Sub Button_AddCategory()
         
     Call UpdateStart
+    Call SaveSearch '---검색중이던 내용 저장
     
-    If AddCategory = 0 Then
-        
-        GoTo event_exe
-        
-    End If
+    Call AddCategory
         
     Call UpdateEnd
     Exit Sub
 
-'---선택된 열 존재 시 처리
-event_exe:
-    
-    Call UpdateEnd
-    검색어_시작.Value = "" '---Home 시트 이벤트 동작
-        
-    '---가져온 데이터 열 너비 자동 맞춤
-    Range("DATA").EntireColumn.AutoFit
-    
 End Sub
 
 '=====================================================================
@@ -60,16 +48,52 @@ Public Sub Button_ResetSearch()
     
     If ResetSearch = 0 Then
         
-        GoTo event_exe
+        Call PasteData
         
     End If
-            
+    
     Call UpdateEnd
+    
+End Sub
 
-'---선택된 열 존재 시 처리
-event_exe:
+'=====================================================================
+'열 선택 버튼
+Public Sub Button_HideCategory()
 
-    Call UpdateEnd
-    검색어_시작.Value = "" '---Home 시트 이벤트 동작
+    With Sheets("Search").Columns("B:C")
+        If .Hidden = True Then
+            Call HideHomeCategory(False)
+        Else
+            Call HideHomeCategory(True)
+        End If
+    End With
+    
+End Sub
+
+'=====================================================================
+'검색 페이지 이동 버튼
+Public Sub Button_GotoSearch()
+    
+    If Sheets("Search").Visible = True Then
+        Sheets("Search").Select
+        
+    End If
+    
+End Sub
+
+'=====================================================================
+'SearchForm 열기
+Public Sub Button_SearchForm()
+    
+    SearchForm.Show
+    
+End Sub
+
+Public Sub Button_AutoFill()
+    
+    Call SetRange
+    
+    Call AutoFill(검색키워드_시작.Value)
+    
 End Sub
 

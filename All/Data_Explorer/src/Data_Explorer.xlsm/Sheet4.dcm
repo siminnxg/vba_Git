@@ -1,0 +1,214 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "Sheet4"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Option Explicit
+
+'=====================================================================
+'매크로 : Worksheet_Change
+'대상 시트 : Main 시트
+'동작 : 검색 영역에 데이터 변경이 있는 경우 매크로 동작, 데이터 시트에 필터된 내용 Home 시트에 호출
+'=====================================================================
+Private Sub Worksheet_Change(ByVal Target As Range)
+    
+    '###변수 선언###
+        
+    Dim shtname As String '---시트명 저장 변수
+    Dim data_range As ListObject '----데이터 시트의 전체 데이터 영역 저장 변수
+    Dim strSearchKeyword As String '---사용자가 검색하려는 열 값 저장 변수
+    Dim strSearchData() As String '---사용자가 입력한 검색어
+    Dim rngCategory As Range '---선택된 열 영역
+    Dim rngSearch As Range '---검색어 영역
+    Dim data_adr As Range '---데이터 시트 내 카테고리 행을 제외한 영역 저장 변수
+    Dim result As Range '---데이터 시트 내 검색된 데이터 위치 저장 변수
+    
+    '###동작 시작###
+   
+    
+    '화면 업데이트 중지
+    Call UpdateStart
+    
+    '공통으로 사용하는 영역 위치, 색상 호출
+    Call SetRange
+    Call SetColor
+    
+    '에러가 발생하면 exit_error 로 이동
+    On Error GoTo exit_error
+                
+    '선택된 열이 1개도 없으면 종료
+    If 검색키워드_시작.Value = "" Then '---선택된 열 시작 위치 공백 확인
+        Call UpdateEnd
+        Exit Sub
+    End If
+    
+    '선택된 열 영역 확인
+    Set rngCategory = Range(검색키워드_시작, 검색키워드_끝)
+    
+    '사용자가 검색할 영역 확인
+    Set rngSearch = rngCategory.Offset(-1, 0) '---선택된 열 기준으로 검색 영역 할당
+    
+    '사용자 입력 확인
+    If Not Intersect(Target, rngSearch) Is Nothing Then
+                
+        strSearchData = Split(Target.Value, ",") '---검색어 쉼표 기준으로 배열에 분리하여 저장
+        
+        '검색어가 2개인 경우 포함된 값 검색
+        If UBound(strSearchData) = 1 Then
+            For i = 0 To UBound(strSearchData)
+                    strSearchData(i) = "=*" & strSearchData(i) & "*"
+            Next
+        End If
+        
+        shtname = CStr(현재프리셋.Value)
+                        
+        strSearchKeyword = Target.Offset(1, 0)
+        
+        Set data_range = Sheets(shtname).ListObjects(1)
+        
+        Set data_adr = data_range.DataBodyRange '---카테고리 행을 제외한 영역 위치 저장
+                
+        Range("DATA").FormatConditions.Delete
+        
+        '---데이터가 불러와져있는 영역 초기화
+        Range(검색키워드_시작.Offset(1, 0), 검색키워드_시작.Offset(Range("DATA").Rows.Count, rngCategory.Cells.Count - 1)).ClearContents
+                                        
+        '---다중 영역 선택 후 delete 동작 시 방어
+        If Target.Cells.Count > 1 Then
+            Range("notice") = "하나의 셀만 선택해주세요."
+            Range("notice").Font.Color = vbRed
+            GoTo data_paste
+        End If
+        
+        '---검색한 위치 하단에 선택된 열이 공백 상태일 때 방어
+        If Target.Offset(1, 0).Value = "" Then
+                GoTo exit_sub
+        End If
+        
+        '---검색한 값이 없는 경우 필터 해제
+        If Target.Value = "" Then
+            Sheets(shtname).Range("A1").AutoFilter _
+            Field:=data_range.ListColumns(strSearchKeyword).Index
+            
+            Target.Offset(1, 0).Interior.Color = vbWhite
+            Range("notice") = "검색할 내용을 입력해주세요."
+            Range("notice").Font.Color = vbBlack
+            
+        '검색한 값이 존재하면 데이터 시트 필터 적용
+        Else
+            '2개 이상 검색 시 일치하는 값만 확인
+            If UBound(strSearchData) > 0 Then
+                
+                Sheets(shtname).Range("A1").AutoFilter _
+                Field:=data_range.ListColumns(strSearchKeyword).Index, _
+                Criteria1:=Array(strSearchData), _
+                Operator:=xlFilterValues
+            
+            Else
+                
+                Sheets(shtname).Range("A1").AutoFilter _
+                Field:=data_range.ListColumns(strSearchKeyword).Index, _
+                Criteria1:="=*" & Target.Value & "*", _
+                Criteria2:=Target.Value, _
+                Operator:=xlOr
+                
+            End If
+                        
+            Target.Offset(1, 0).Interior.Color = colorCategorySel
+            
+            '사용자가 입력한 행 고정 표시
+            If 고정행.Value > 0 Then
+                
+                For i = 1 To 고정행.Value
+                
+                 Sheets(shtname).Rows(i).Hidden = False
+                 
+                Next
+                
+            End If
+            
+            '---검색된 값이 없으면 빈칸
+            If data_range.Range.SpecialCells(xlCellTypeVisible).Count = data_range.HeaderRowRange.Count Then '---화면에 첫행을 제외한 행이 보이는지 확인
+                
+                '---Home 시트에 데이터가 불러와져있는 영역 초기화
+                Range(검색키워드_시작.Offset(1, 0), 검색키워드_시작.Offset(data_adr.Rows.Count + 1, data_adr.Columns.Count + 1)).Clear
+                
+                Range("notice") = "검색된 내용이 없습니다."
+                Range("notice").Font.Color = vbRed
+                                
+                Target.Select
+                GoTo exit_sub
+
+            End If
+            
+            Range("notice") = "검색되었습니다."
+            Range("notice").Font.Color = vbBlack
+        End If
+
+'데이터 시트 값을 Home 검색 영역에 가져오기
+data_paste:
+
+        Call UpdateStart
+        
+        Call PasteData
+                        
+        Target.Select
+        
+    End If
+
+'---종료 처리
+exit_sub:
+    
+    Call UpdateEnd
+    Exit Sub
+
+'---에러 발생 시 처리
+exit_error:
+    MsgBox ("오류가 발생했습니다. 오류 코드 : " & Err.Number & " " & Err.Description)
+    Call UpdateEnd
+
+End Sub
+
+'=====================================================================
+'매크로 : Worksheet_SelectionChange
+'대상 시트 : Home 시트
+'동작 : 열 리스트 영역을 지정 후 해당 위치 마우스 클릭 시 셀 색상 적용하여 사용자가 열이 선택되었다고 인지
+'=====================================================================
+Private Sub Worksheet_SelectionChange(ByVal Target As Range)
+    
+    '###동작 시작###
+    
+    '---공통으로 사용하는 영역 위치, 색상 호출
+    Call SetRange
+    Call SetColor
+    
+    '---선택할 열 없는 경우 동작하지 않음
+    If 열목록_시작 = "" Then
+    
+        Exit Sub
+        
+    End If
+    
+    '---선택한 셀이 열 리스트 영역 밖이라면 미 동작 처리
+    If Not Intersect(Target, 현재프리셋) Is Nothing Or Not Intersect(Target, Range("A:A")) Is Nothing Or Not Intersect(Target, Range("C:C")) Is Nothing Or Not Intersect(Target, 열목록_끝.Offset(1, 0)) Is Nothing Then
+        
+        Exit Sub
+        
+    '---선택한 셀이 열 리스트 안이라면 동작
+    ElseIf Not Intersect(Target, 열목록) Is Nothing Then
+    
+        '---셀 색상 확인 및 색 적용
+        If Target.Interior.Color = colorCategorySel Then
+            Target.Interior.Color = vbWhite
+            
+        Else
+            Target.Interior.Color = colorCategorySel
+
+        End If
+    End If
+End Sub
+
