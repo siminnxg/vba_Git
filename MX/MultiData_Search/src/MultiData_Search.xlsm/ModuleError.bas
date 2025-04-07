@@ -72,17 +72,41 @@ End Function
 '매크로 : CheckSheet
 '동작 : 사용자가 입력한 파일 내 입력한 시트명이 존재하는지 체크합니다.
 '=====================================================================
-Public Function CheckSheet(Wb, strSheet) As Boolean
+Public Function CheckSheet(wb, strSheet) As Boolean
 
-    For j = 1 To Wb.Sheets.count
+    For j = 1 To wb.Sheets.count
         
         '시트명이 일치하는지 체크
-        If Wb.Sheets(j).Name = strSheet Then
+        If wb.Sheets(j).Name = strSheet Then
             Exit Function
             
         End If
     Next
         
     CheckSheet = True
+    
+End Function
+
+'=====================================================================
+'파일 오픈 상태 체크
+Public Function CheckFileOpen(CheckFile As String) As Boolean
+
+    Dim wb1 As Variant
+    
+    On Error Resume Next
+    
+    Set wb1 = Workbooks(Dir(CheckFile))
+        
+    If Not wb1 Is Empty Then
+    
+        CheckFileOpen = True
+        
+    Else
+    
+        CheckFileOpen = False
+        
+    End If
+    
+    On Error GoTo 0
     
 End Function

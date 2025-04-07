@@ -12,7 +12,7 @@ Public Sub SearchData()
     
     '호출 파일 관련 변수
     Dim Obj As Object
-    Dim Wb As Workbook
+    Dim wb As Workbook
     Dim WS As Worksheet
     
     Dim strFile As String '---파일 경로 & 이름
@@ -54,21 +54,26 @@ Public Sub SearchData()
         strSheet = 파일명(i).Offset(0, 1).Value
     
         '파일 호출
-        Set Obj = GetObject(strFile)
-        Set Wb = Workbooks(Dir(strFile))
+        If CheckFileOpen(strFile) = False Then
+                
+            Set Obj = GetObject(strFile)
+        
+        End If
+        
+        Set wb = Workbooks(Dir(strFile))
         
         Call ObjectList(strFile)
         
         '시트명 공백 시 첫번째 시트 기본값으로 지정
         If strSheet = "" Then
         
-            strSheet = Wb.Sheets(1).Name
+            strSheet = wb.Sheets(1).Name
             파일명(i).Offset(0, 1) = strSheet
             
         End If
         
         '파일에 해당 시트 없는 경우 종료
-        If CheckSheet(Wb, strSheet) = True Then
+        If CheckSheet(wb, strSheet) = True Then
             MsgBox 파일명(i) & " 파일에 " & strSheet & " 시트가 존재하지 않습니다."
             
             Obj.Close '---호출된 파일 닫기
@@ -76,7 +81,7 @@ Public Sub SearchData()
             
         End If
         
-        Set WS = Wb.Sheets(strSheet)
+        Set WS = wb.Sheets(strSheet)
                 
         '호출된 파일 내에서 검색 개수 체크
         If 검색어.Offset(0, 1) = "포함" Then
@@ -118,8 +123,8 @@ Public Sub SearchData()
         varResultCount = 0 '---검색 개수 초기화
         
         '검색할 파일 설정
-        Set Wb = Workbooks(Dir(strFile))
-        Set WS = Wb.Sheets(strSheet)
+        Set wb = Workbooks(Dir(strFile))
+        Set WS = wb.Sheets(strSheet)
         
         '검색
         If 검색어.Offset(0, 1) = "포함" Then
@@ -192,7 +197,7 @@ End Sub
 '=====================================================================
 Public Sub CloseFile()
     
-    Dim Wb As Workbook
+    Dim wb As Workbook
     Dim count As Variant
     
     On Error Resume Next
@@ -208,8 +213,8 @@ Public Sub CloseFile()
     '호출된 파일들 닫기
     For i = 1 To Range("오브젝트").count
         
-        Set Wb = Workbooks(Dir(Range("오브젝트")(i)))
-        Wb.Close
+        Set wb = Workbooks(Dir(Range("오브젝트")(i)))
+        wb.Close
         count = 1
         
     Next
@@ -230,7 +235,7 @@ End Sub
 '=====================================================================
 Public Sub OpenFile()
 
-    Dim Wb As Workbook
+    Dim wb As Workbook
     
     On Error Resume Next
     
@@ -241,10 +246,10 @@ Public Sub OpenFile()
     Call UpdateStart
     
     For i = 1 To Range("오브젝트").count
-        Set Wb = Workbooks(Dir(Range("오브젝트").Cells(i)))
+        Set wb = Workbooks(Dir(Range("오브젝트").Cells(i)))
         
-        Wb.IsAddin = True
-        Wb.IsAddin = False
+        wb.IsAddin = True
+        wb.IsAddin = False
         ThisWorkbook.Activate
         
     Next
@@ -352,11 +357,13 @@ Public Sub SearchSheet()
     
     '호출 파일 관련 변수
     Dim Obj As Object
-    Dim Wb As Workbook
+    Dim wb As Workbook
     Dim WS As Worksheet
     
     Dim strFile As String '---파일 경로 & 이름
     Dim strSheets() As String '---시트 리스트 저장 배열
+    
+    On Error Resume Next
     
     Call UpdateStart
     Call SetRange
@@ -374,16 +381,21 @@ Public Sub SearchSheet()
         strFile = 파일경로(i) & "\" & 파일명(i)
         
         '파일 호출
-        Set Obj = GetObject(strFile)
-        Set Wb = Workbooks(Dir(strFile))
+        If CheckFileOpen(strFile) = False Then
+                
+            Set Obj = GetObject(strFile)
+        
+        End If
+        
+        Set wb = Workbooks(Dir(strFile))
         
         Call ObjectList(strFile) '---오브젝트 리스트 저장
         
-        ReDim strSheets(1 To Wb.Sheets.count) '---배열 크기 재지정
+        ReDim strSheets(1 To wb.Sheets.count) '---배열 크기 재지정
         
         For j = 1 To UBound(strSheets)
             
-            strSheets(j) = Wb.Sheets(j).Name
+            strSheets(j) = wb.Sheets(j).Name
         
         Next
         
@@ -406,5 +418,16 @@ Public Sub SearchSheet()
 exit_sub:
 
     Call UpdateEnd
+    
+End Sub
+
+
+Public Sub ClearFile()
+
+    Call SetRange
+    
+    Range(파일경로, 머릿글).ClearContents
+    
+    시트명.Validation.Delete
     
 End Sub

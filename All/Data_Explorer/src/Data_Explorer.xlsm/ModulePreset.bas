@@ -329,7 +329,7 @@ Public Sub RefreshPreset()
             Else
                 
                 '프리셋 이름으로 생성된 시트의 listobject 새로고침
-                Sheets(.Cells(i).Value).ListObjects(1).QueryTable.Refresh BackgroundQuery:=False
+                Sheets(CStr(.Cells(i).Value)).ListObjects(1).QueryTable.Refresh BackgroundQuery:=False
             
             End If
         Next

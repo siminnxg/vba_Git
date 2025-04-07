@@ -131,20 +131,6 @@ Private Sub Worksheet_Change(ByVal Target As Range)
                 
             End If
             
-            '---검색된 값이 없으면 빈칸
-            If data_range.Range.SpecialCells(xlCellTypeVisible).Count = data_range.HeaderRowRange.Count Then '---화면에 첫행을 제외한 행이 보이는지 확인
-                
-                '---Home 시트에 데이터가 불러와져있는 영역 초기화
-                Range(검색키워드_시작.Offset(1, 0), 검색키워드_시작.Offset(data_adr.Rows.Count + 1, data_adr.Columns.Count + 1)).Clear
-                
-                Range("notice") = "검색된 내용이 없습니다."
-                Range("notice").Font.Color = vbRed
-                                
-                Target.Select
-                GoTo exit_sub
-
-            End If
-            
             Range("notice") = "검색되었습니다."
             Range("notice").Font.Color = vbBlack
         End If
