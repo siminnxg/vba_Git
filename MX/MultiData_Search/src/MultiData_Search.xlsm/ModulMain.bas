@@ -177,9 +177,19 @@ Public Sub SearchData()
         
             ThisWorkbook.Names("DATA").RefersTo = Range(Range("DATA"), 검색결과.Offset(varResultCount, varWS_Col)) '---'DATA' 영역 재지정
             
+            With Range(검색결과.Offset(0, 1), 검색결과.Offset(varResultCount - 1, varWS_Col))
+                
+                '셀 테두리
+                .Borders(xlLeft).LineStyle = xlContinuous
+                .Borders(xlRight).LineStyle = xlContinuous
+                .Borders(xlTop).LineStyle = xlContinuous
+                .Borders(xlBottom).LineStyle = xlContinuous
+                
+            End With
+
             Set 검색결과 = 검색결과.Offset(varResultCount + 1, 0) '---'검색결과' 영역 재지정
             
-            Application.Goto reference:=검색어.Offset(-2, -1), Scroll:=True  ' 원하는 셀로 이동 후 스크롤
+            Application.GoTo reference:=검색어.Offset(-2, -1), Scroll:=True  ' 원하는 셀로 이동 후 스크롤
             
         End If
     Next

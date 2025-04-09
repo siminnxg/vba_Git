@@ -97,7 +97,7 @@ Public Function CheckFileOpen(CheckFile As String) As Boolean
     
     Set wb1 = Workbooks(Dir(CheckFile))
         
-    If Not wb1 Is Empty Then
+    If Not IsEmpty(wb1) Then
     
         CheckFileOpen = True
         
