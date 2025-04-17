@@ -1,8 +1,6 @@
 Attribute VB_Name = "ModuleCommon"
 Option Explicit
 
-Public 파일경로 As Range
-
 Public 검색어 As Range
 
 Public 검색목록 As Range
@@ -14,8 +12,14 @@ Public 키목록_시작 As Range
 Public 키목록_끝 As Range
 
 Public 치트키 As Range
+Public 치트키_시작 As Range
+Public 치트키_끝 As Range
+
+Public 파일경로 As Range
 
 Public 타입 As ListObject
+
+
 
 Public i, j, k As Variant '---반복문 사용 변수
 Public cell As Range
@@ -24,10 +28,10 @@ Public Sub SetRange()
 
     With Sheets("Main")
         
-        Set 검색어 = .Range("B6")
+        Set 검색어 = .Range("B7")
         
         '키목록 영역 지정
-        Set 키목록_시작 = .Range("B9")
+        Set 키목록_시작 = .Range("B10")
         If IsError(키목록_시작.Value) Then
             Set 키목록_끝 = 키목록_시작
         Else
@@ -35,11 +39,8 @@ Public Sub SetRange()
         End If
         Set 키목록 = Range(키목록_시작, 키목록_끝)
         
-        '파일경로 영역 지정
-        Set 파일경로 = .Range("B3")
-        
         '검색목록 영역 지정
-        Set 검색목록_시작 = .Range("E3")
+        Set 검색목록_시작 = .Range("E7")
         If 검색목록_시작.Value = "" Then
             Set 검색목록_끝 = 검색목록_시작
         Else
@@ -48,13 +49,20 @@ Public Sub SetRange()
         Set 검색목록 = Range(검색목록_시작, 검색목록_끝)
         
         '치트키 영역 지정
-        Set 치트키 = .Range("K3")
+        Set 치트키_시작 = .Range("K7")
+        If IsEmpty(치트키_시작) Then
+            Set 치트키 = 치트키_시작
+        Else
+            Set 치트키 = Range(치트키_시작, 치트키_시작.Offset(-1, 0).End(xlDown))
+        End If
         
     End With
     
     With Sheets("etc")
         
         Set 타입 = .ListObjects(1)
+        
+        Set 파일경로 = .Range("H2")
         
     End With
     

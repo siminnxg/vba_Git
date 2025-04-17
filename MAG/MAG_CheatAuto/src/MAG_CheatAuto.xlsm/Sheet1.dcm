@@ -64,13 +64,23 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
     ElseIf Not Intersect(Target, 키목록) Is Nothing Then
     
         '셀 색상 확인 및 색 적용
-        If Target.Interior.Color = vbYellow Then
-            Target.Interior.Color = vbWhite
+        If Target.Offset(0, -1).Interior.Color = vbRed Then
+            Target.Offset(0, -1).Interior.Color = vbWhite
         Else
-            Target.Interior.Color = vbYellow
+            Target.Offset(0, -1).Interior.Color = vbRed
         End If
         
     End If
     
+    '치트키 영역 선택 시 복사
+    If Not Intersect(Target, 치트키) Is Nothing Then
+        
+        If IsEmpty(Target) = True Or InStr(Target.Value, "조회된") > 0 Then
+            Exit Sub
+        End If
+        
+        If Target.Cells.Count = 1 Then
+            Target.Copy
+        End If
+    End If
 End Sub
-

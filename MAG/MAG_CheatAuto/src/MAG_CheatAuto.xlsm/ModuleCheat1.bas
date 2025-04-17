@@ -34,7 +34,7 @@ Public Sub SelectKey()
     
     '키 목록을 순회하며 선택된 셀 확인
     For Each cell In 키목록
-        If cell.Interior.Color = vbYellow Then
+        If cell.Offset(0, -1).Interior.Color = vbRed Then
             
             '검색 목록 비어있는 경우
             If 검색목록_시작.Value = "" Then
@@ -45,37 +45,10 @@ Public Sub SelectKey()
                 Set 검색목록_끝 = 검색목록_끝.Offset(1, 0)
                 검색목록_끝.Value = cell.Value
             End If
-            
-'            '아이템 타입에 드롭다운 표시
-'            With 검색목록_끝.Offset(0, 2).Validation
-'                .Delete
-'                .Add _
-'                Type:=xlValidateList, _
-'                AlertStyle:=xlValidAlertStop, _
-'                Formula1:="재료, 외장부품, 반응로, 무기, 룬, 소셜모션"
-'            End With
-            
-'            '키에 포함된 문구로 아이템 타입 입력
-'            If InStr(cell.Value, "Key_Weapon") Then
-'                검색목록_끝.Offset(0, 2).Value = "무기"
-'
-'            ElseIf InStr(cell.Value, "Key_Accessory_Reactor") Then
-'                검색목록_끝.Offset(0, 2).Value = "반응로"
-'
-'            ElseIf InStr(cell.Value, "Key_Accessory") Then
-'                검색목록_끝.Offset(0, 2).Value = "외장부품"
-'
-'            ElseIf InStr(cell.Value, "Key_Rune") Then
-'                검색목록_끝.Offset(0, 2).Value = "룬"
-'
-'            Else
-'                검색목록_끝.Offset(0, 2).Value = "재료"
-'            End If
-            
         End If
     Next
     
-    키목록.Interior.Color = vbWhite '---이동 완료 후 KEY 색상 초기화
+    키목록.Offset(0, -1).Interior.Color = vbWhite '---이동 완료 후 KEY 색상 초기화
 
 End Sub
 
@@ -95,14 +68,10 @@ Public Function SQLFileLoad(cell As Range, rngFileName As Range)
     '# 동작 시작
     'On Error Resume Next
     
-    '테스트
-    
     '선택된 Key 값들을 묶어 Where 조건으로 변환
     For i = 1 To cell.Cells.Count
         strWhere = strWhere & "'" & cell(i).Value & "',"
     Next
-    
-    
     
     '문서 개수만큼 반복
     For i = 1 To rngFileName.Cells.Count
@@ -244,10 +213,10 @@ Public Sub CheatCreatItem()
         End With
         
         If InTemplateId = 0 Then
-            치트키.Offset(i, 0).Value = "조회된 TID가 존재하지 않습니다."
+            치트키_시작.Offset(i, 0).Value = "조회된 TID가 존재하지 않습니다."
         Else
         
-            치트키.Offset(i, 0).Value = "RequestCreateItem " & InItemType & " " & InTemplateId & " " & _
+            치트키_시작.Offset(i, 0).Value = "RequestCreateItem " & InItemType & " " & InTemplateId & " " & _
                                         InCount & " " & InLevel
         End If
     
@@ -259,6 +228,22 @@ Public Sub ClearKEYList()
 
     Call SetRange
     
-    검색목록.Resize(, 7).ClearContents
+    검색목록.Resize(, 3).ClearContents
+    
+End Sub
+
+Public Sub ClearCheatList()
+    
+    Call SetRange
+    
+    치트키.Resize(, 3).ClearContents
+    
+End Sub
+
+Public Sub ClearSearchList()
+    
+    Call SetRange
+    
+    키목록.Offset(0, -1).Interior.Color = vbWhite
     
 End Sub
