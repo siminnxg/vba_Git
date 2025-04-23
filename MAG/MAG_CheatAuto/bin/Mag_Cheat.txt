@@ -1,0 +1,7 @@
+<Mag_CreatItem>
+RequestCreateItem 3 261021096 2 100
+RequestCreateItem 3 261021098 1 100
+RequestCreateItem 3 261021099 5 100
+RequestCreateItem 3 261011006 1 100
+RequestCreateItem 3 261011008 1 100
+RequestCreateItem 2 211033003 1 70

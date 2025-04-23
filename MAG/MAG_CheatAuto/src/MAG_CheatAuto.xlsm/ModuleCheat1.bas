@@ -23,6 +23,8 @@ Sub FindTID()
     
     Call CheatCreatItem
     
+    치트키_시작.Offset(-1, 0).Value = "일괄 입력 희망 시 [메모장 생성] 버튼을 클릭해주세요."
+    
 Exit_Sub:
     Call UpdateEnd
     
@@ -64,6 +66,7 @@ Public Function SQLFileLoad(cell As Range, rngFileName As Range)
     Dim rngFindCell As Range '---검색된 Key의 위치 변수
     Dim rngRuneCell As Range '---RuneData 시트에서 key의 위치 변수
     Dim strRuneData As Variant '---RuneUIData 문서에서 찾은 값 저장 배열
+    Dim strFileName As String
     
     '# 동작 시작
     'On Error Resume Next
@@ -76,7 +79,9 @@ Public Function SQLFileLoad(cell As Range, rngFileName As Range)
     '문서 개수만큼 반복
     For i = 1 To rngFileName.Cells.Count
         
-        strFilePath = 파일경로.Value & "\" & rngFileName(i).Value & ".xlsx" '---문서 경로 지정
+        strFileName = rngFileName(i).Value
+        
+        strFilePath = 파일경로.Value & "\" & strFileName & ".xlsx" '---문서 경로 지정
         
         'SQL 조건 작성
         '룬 데이터는 개별 작성
@@ -181,6 +186,8 @@ Public Sub CheatCreatItem()
     
     Call SetRange
     
+    치트키.ClearContents
+    
     For i = 0 To 검색목록.Cells.Count - 1
         
         With 검색목록(i + 1)
@@ -196,8 +203,8 @@ Public Sub CheatCreatItem()
             ElseIf .Offset(0, 2).Value = "RuneUIData" Then
                 InItemType = 4
                 
-            ElseIf .Offset(0, 2).Value = "SocialMotionData" Then
-                InItemType = 5
+            ElseIf .Offset(0, 2).Value = "CustomizingItemData" Then
+                InItemType = 7
             End If
             
             InCount = .Offset(0, 3).Value
@@ -228,7 +235,7 @@ Public Sub ClearKEYList()
 
     Call SetRange
     
-    검색목록.Resize(, 3).ClearContents
+    검색목록.Resize(, 5).ClearContents
     
 End Sub
 
@@ -236,7 +243,9 @@ Public Sub ClearCheatList()
     
     Call SetRange
     
-    치트키.Resize(, 3).ClearContents
+    치트키.ClearContents
+    
+    치트키_시작.Offset(-1, 0).Value = "일괄 입력 희망 시 [메모장 생성] 버튼을 클릭해주세요."
     
 End Sub
 
@@ -246,4 +255,36 @@ Public Sub ClearSearchList()
     
     키목록.Offset(0, -1).Interior.Color = vbWhite
     
+End Sub
+
+Public Sub WriteCheat()
+    
+    Dim path As String
+    
+    Call SetRange
+    
+    If IsEmpty(치트키_시작) Then
+        MsgBox "생성된 치트키가 없습니다."
+        Exit Sub
+    End If
+    
+    path = ThisWorkbook.path & "\Mag_Cheat.txt"
+    
+    Open path For Output As #1
+        
+        Print #1, "<Mag_CreatItem>"
+        
+        '치트키 영역을 돌면서 반복
+        For Each cell In 치트키
+            
+            '조회된 TID~~ 셀 제외
+            If InStr(cell.Value, "조회된") = 0 Then
+                Print #1, cell.Value '---작성된 치트 메모장에 출력
+            End If
+            
+        Next
+    Close
+    
+    치트키_시작.Offset(-1, 0).Value = "M1.CheatUsingPreset " & path & " <Mag_CreatItem>"
+
 End Sub

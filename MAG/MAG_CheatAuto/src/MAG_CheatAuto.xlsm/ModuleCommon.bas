@@ -20,7 +20,6 @@ Public 파일경로 As Range
 Public 타입 As ListObject
 
 
-
 Public i, j, k As Variant '---반복문 사용 변수
 Public cell As Range
 
@@ -74,7 +73,6 @@ Public Sub UpdateStart()
     Application.DisplayStatusBar = False
     Application.Calculation = xlCalculationManual
     Application.EnableEvents = False
-
 
 End Sub
 

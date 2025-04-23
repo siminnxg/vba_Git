@@ -15,8 +15,6 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     
     If Not Intersect(Target, 검색어) Is Nothing Then
     
-'        키목록.Resize(, 1).CurrentRegion.FormatConditions.Delete
-        
         키목록.Interior.Color = vbWhite
         
         If IsEmpty(Target.Value) Then
@@ -29,18 +27,6 @@ Private Sub Worksheet_Change(ByVal Target As Range)
         Else
             키목록_시작.Formula2 = "=FILTER(StringProduct!A:B,ISNUMBER((FIND(""" & 검색어.Value & """,StringProduct!B:B))),"" 검색 결과가 없습니다."")"
         End If
-            
-'        'DATA 이름 범위에 조건부 서식 적용
-'        With 키목록.Resize(, 1).CurrentRegion.FormatConditions.Add( _
-'            Type:=xlExpression, Formula1:="=$B$9<>""""")
-'
-'            '셀 테두리
-'            .Borders(xlLeft).LineStyle = xlContinuous
-'            .Borders(xlRight).LineStyle = xlContinuous
-'            .Borders(xlTop).LineStyle = xlContinuous
-'            .Borders(xlBottom).LineStyle = xlContinuous
-'
-'        End With
 
         Target.Select
         
@@ -73,14 +59,18 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
     End If
     
     '치트키 영역 선택 시 복사
-    If Not Intersect(Target, 치트키) Is Nothing Then
+    If Not Intersect(Target, Range(치트키, 치트키_시작.Offset(-1, 0))) Is Nothing Then
         
-        If IsEmpty(Target) = True Or InStr(Target.Value, "조회된") > 0 Then
+        '셀 2개 이상 선택 시 종료
+        If Target.Cells.Count > 1 Then
+            Exit Sub
+        
+        '조회된 TID~~ 선택 시 종료
+        ElseIf IsEmpty(Target) = True Or InStr(Target.Value, "조회된") > 0 Or InStr(Target.Value, "일괄 입력") > 0 Then
             Exit Sub
         End If
+    
+        Target.Copy
         
-        If Target.Cells.Count = 1 Then
-            Target.Copy
-        End If
     End If
 End Sub
