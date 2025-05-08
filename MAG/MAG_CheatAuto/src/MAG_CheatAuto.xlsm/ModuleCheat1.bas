@@ -1,26 +1,27 @@
 Attribute VB_Name = "ModuleCheat1"
 Option Explicit
 '###################################################
-'아이템 생성 치트키 모듈
+'Cheat1 RequestCreateItem 치트키 관련 모듈
 '###################################################
 
-Sub FindTID()
-    
-    '# 변수 선언
-    Dim rngFileName As Range '파일경로 & 파일명
-    Dim rngFindType As Range
+'===================================================
+'아이템 생성 [Cheat 생성] 버튼
+Public Sub Cheat1()
     
     '# 동작 시작
     Call UpdateStart
     Call SetRange
     
+    '선택된 키가 없으면 종료
     If 검색목록_시작.Value = "" Then
         MsgBox "선택된 Key가 없습니다."
         GoTo Exit_Sub
     End If
-        
+    
+    '파일 데이터 조회
     Call SQLFileLoad(검색목록, 타입.ListColumns("문서").DataBodyRange)
     
+    '치트키 생성
     Call CheatCreatItem
     
     치트키_시작.Offset(-1, 0).Value = "일괄 입력 희망 시 [메모장 생성] 버튼을 클릭해주세요."
@@ -30,30 +31,8 @@ Exit_Sub:
     
 End Sub
 
-Public Sub SelectKey()
-    
-    Call SetRange
-    
-    '키 목록을 순회하며 선택된 셀 확인
-    For Each cell In 키목록
-        If cell.Offset(0, -1).Interior.Color = vbRed Then
-            
-            '검색 목록 비어있는 경우
-            If 검색목록_시작.Value = "" Then
-                검색목록_시작.Value = cell.Value
-                
-            '검색 목록 값이 존재하는 경우
-            Else
-                Set 검색목록_끝 = 검색목록_끝.Offset(1, 0)
-                검색목록_끝.Value = cell.Value
-            End If
-        End If
-    Next
-    
-    키목록.Offset(0, -1).Interior.Color = vbWhite '---이동 완료 후 KEY 색상 초기화
-
-End Sub
-
+'===================================================
+'SQL로 파일 데이터 조회
 Public Function SQLFileLoad(cell As Range, rngFileName As Range)
     
     '# 변수 선언
@@ -71,6 +50,8 @@ Public Function SQLFileLoad(cell As Range, rngFileName As Range)
     '# 동작 시작
     'On Error Resume Next
     
+    Call UpdateStart
+    
     '선택된 Key 값들을 묶어 Where 조건으로 변환
     For i = 1 To cell.Cells.Count
         strWhere = strWhere & "'" & cell(i).Value & "',"
@@ -82,6 +63,10 @@ Public Function SQLFileLoad(cell As Range, rngFileName As Range)
         strFileName = rngFileName(i).Value
         
         strFilePath = 파일경로.Value & "\" & strFileName & ".xlsx" '---문서 경로 지정
+         
+        If CheckFile(strFilePath) = True Then
+            Exit Function
+        End If
         
         'SQL 조건 작성
         '룬 데이터는 개별 작성
@@ -146,7 +131,7 @@ Public Function SQLFileLoad(cell As Range, rngFileName As Range)
                  " FROM [DATA$] " & _
                  " WHERE StringId IN (" & strWhere & ")"
             
-                'OLEDB 연결
+            'OLEDB 연결
             Set objDB = CreateObject("ADODB.Connection")
             objDB.Open "Provider=Microsoft.ACE.OLEDB.12.0;" & _
                       "Data Source=" & strFilePath & ";" & _
@@ -176,7 +161,8 @@ Public Function SQLFileLoad(cell As Range, rngFileName As Range)
     
 End Function
 
-'RequestCreateItem InItemType, InTemplateld, InCount, InLevel
+'===================================================
+'[Cheat 생성] 버튼
 Public Sub CheatCreatItem()
     
     Dim InItemType As Variant
@@ -191,9 +177,10 @@ Public Sub CheatCreatItem()
     For i = 0 To 검색목록.Cells.Count - 1
         
         With 검색목록(i + 1)
-        
+            
             InTemplateId = .Offset(0, 1).Value
             
+            '문서에 따라 아이템 타입 설정
             If .Offset(0, 2).Value = "RangedWeaponData" Or .Offset(0, 2).Value = "AccessoryData" Or .Offset(0, 2).Value = "ReactorData" Then
                 InItemType = 2
                 
@@ -207,11 +194,13 @@ Public Sub CheatCreatItem()
                 InItemType = 7
             End If
             
+            '아이템 수량 설정 (공백 시 1)
             InCount = .Offset(0, 3).Value
             If InCount = 0 Then
                 InCount = 1
             End If
             
+            '아이템 레벨 설정 (공백 시 100)
             InLevel = .Offset(0, 4).Value
             If InLevel = 0 Then
                 InLevel = 100
@@ -219,72 +208,16 @@ Public Sub CheatCreatItem()
         
         End With
         
+        '아이템 ID 공백 시 안내 문구 표시
         If InTemplateId = 0 Then
             치트키_시작.Offset(i, 0).Value = "조회된 TID가 존재하지 않습니다."
-        Else
         
+        '치트키 입력
+        Else
             치트키_시작.Offset(i, 0).Value = "RequestCreateItem " & InItemType & " " & InTemplateId & " " & _
                                         InCount & " " & InLevel
         End If
     
     Next
     
-End Sub
-
-Public Sub ClearKEYList()
-
-    Call SetRange
-    
-    검색목록.Resize(, 5).ClearContents
-    
-End Sub
-
-Public Sub ClearCheatList()
-    
-    Call SetRange
-    
-    치트키.ClearContents
-    
-    치트키_시작.Offset(-1, 0).Value = "일괄 입력 희망 시 [메모장 생성] 버튼을 클릭해주세요."
-    
-End Sub
-
-Public Sub ClearSearchList()
-    
-    Call SetRange
-    
-    키목록.Offset(0, -1).Interior.Color = vbWhite
-    
-End Sub
-
-Public Sub WriteCheat()
-    
-    Dim path As String
-    
-    Call SetRange
-    
-    If IsEmpty(치트키_시작) Then
-        MsgBox "생성된 치트키가 없습니다."
-        Exit Sub
-    End If
-    
-    path = ThisWorkbook.path & "\Mag_Cheat.txt"
-    
-    Open path For Output As #1
-        
-        Print #1, "<Mag_CreatItem>"
-        
-        '치트키 영역을 돌면서 반복
-        For Each cell In 치트키
-            
-            '조회된 TID~~ 셀 제외
-            If InStr(cell.Value, "조회된") = 0 Then
-                Print #1, cell.Value '---작성된 치트 메모장에 출력
-            End If
-            
-        Next
-    Close
-    
-    치트키_시작.Offset(-1, 0).Value = "M1.CheatUsingPreset " & path & " <Mag_CreatItem>"
-
 End Sub

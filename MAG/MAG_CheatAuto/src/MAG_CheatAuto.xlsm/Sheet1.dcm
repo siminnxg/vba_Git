@@ -15,7 +15,7 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     
     If Not Intersect(Target, 검색어) Is Nothing Then
     
-        키목록.Interior.Color = vbWhite
+        키목록.Borders.LineStyle = xlNone
         
         If IsEmpty(Target.Value) Then
             Target.Value = " "
@@ -36,24 +36,130 @@ End Sub
 
 Private Sub Worksheet_SelectionChange(ByVal Target As Range)
     
+    Dim strShtname As String
+    Dim rngFind As Range
+    Dim rngOptionList As Range
+    Dim cnt As Variant
+    
     Call SetRange
     
     If IsError(키목록_시작) Then
         Exit Sub
     End If
     
+    '#########################
+    '검색 영역 선택 동작
     If Not Intersect(Target, 키목록_시작.Offset(-1, 0)) Is Nothing Or Not Intersect(Target, Range("A:A")) Is Nothing Or Not Intersect(Target, Range("C:C")) Is Nothing Or Not Intersect(Target, 키목록_끝.Offset(1, 0)) Is Nothing Then
         
         Exit Sub
         
-    '선택한 셀이 열 리스트 안이라면 동작
+    '선택한 셀이 키목록 안이라면 동작
     ElseIf Not Intersect(Target, 키목록) Is Nothing Then
-    
-        '셀 색상 확인 및 색 적용
-        If Target.Offset(0, -1).Interior.Color = vbRed Then
-            Target.Offset(0, -1).Interior.Color = vbWhite
+        
+        '선택한 셀 테두리 적용
+        If Target.Borders.LineStyle = xlContinuous Then
+            Target.Borders.LineStyle = xlNone
         Else
-            Target.Offset(0, -1).Interior.Color = vbRed
+        
+             With Target.Borders
+            .LineStyle = xlContinuous
+            .ThemeColor = 9
+            .Weight = xlMedium
+            End With
+            
+        End If
+        
+    End If
+    
+    '치트키2 활성화 상태일 때 동작
+    If rngCheat1.Hidden = True Then
+        
+        '셀 2개 이상 선택 시 종료
+        If Target.Cells.Count > 1 Then
+            Exit Sub
+        End If
+            
+        '선택된 KEY 영역
+        If Not Intersect(Target, 검색목록) Is Nothing Then
+            
+            If Target = "" Then
+                Exit Sub
+            End If
+            
+            '선택한 셀 테두리 적용
+            검색목록.Borders.LineStyle = xlNone '---테두리 초기화
+            With Target.Borders
+                .LineStyle = xlContinuous
+                .ThemeColor = 9
+                .Weight = xlMedium
+            End With
+            
+            '아이템 타입 별 문서에서 KEY 검색 후 GroupId 추출
+            For i = 1 To 3
+                strShtname = 타입.ListColumns("문서").DataBodyRange(i).Value
+                Set rngFind = Sheets(strShtname).UsedRange.Find(Target.Value, Lookat:=xlWhole)
+                
+                If Not rngFind Is Nothing Then
+                    Target.Offset(0, 1) = rngFind.Offset(0, -1).Value '---TID 추출
+                    Target.Offset(0, 2) = rngFind.End(xlDown).Offset(-1, 1).Value '---그룹 ID 추출
+                    Exit For
+                End If
+            Next
+            
+            '옵션 리스트 초기화
+            If IsEmpty(검색옵션_시작) = False Then
+                    Range(검색옵션_시작, 검색옵션_시작.End(xlDown)).ClearContents
+                    Range("Option").Offset(0, 1).Borders.LineStyle = xlNone
+            End If
+            
+            '검색된 GropuId 가 없으면 종료
+            If IsEmpty(Target.Offset(0, 1)) = True Then
+                Exit Sub
+            End If
+            
+            'RandomOptionGroup 문서에서 GroupId 검색 후 OptionId 리스트 추출
+            Set rngFind = Sheets("RandomOptionGroup").UsedRange.Find(Target.Offset(0, 2).Value, Lookat:=xlWhole)
+                
+            If Not rngFind Is Nothing Then
+                
+                Set rngOptionList = Sheets("RandomOptionGroup").Range(rngFind, rngFind.End(xlDown).Offset(-1, 0)).Offset(0, 1)
+                
+                ThisWorkbook.Names("Option").RefersTo = Range(검색옵션_시작, 검색옵션_시작.Offset(rngOptionList.Cells.Count - 1, 0))
+                Range("Option") = rngOptionList.Value
+                
+            End If
+        End If
+        
+        '옵션 선택 영역
+        If Not Intersect(Target, Range("Option").Offset(0, 1)) Is Nothing Then
+            
+            If Range("option")(1) = "" Then
+                Exit Sub
+            End If
+            
+            If Target.Borders.LineStyle = xlContinuous Then
+                Target.Borders.LineStyle = xlNone
+                Exit Sub
+            End If
+            
+            For Each cell In Range("Option").Offset(0, 1)
+                
+                If cell.Borders.LineStyle = xlContinuous Then
+                    cnt = cnt + 1
+                End If
+            Next
+            
+            If cnt > 3 Then
+                MsgBox "옵션은 4개까지 선택 가능합니다."
+                Exit Sub
+            End If
+            
+            '선택한 셀 테두리 적용
+            With Target.Borders
+                .LineStyle = xlContinuous
+                .ThemeColor = 9
+                .Weight = xlMedium
+            End With
         End If
         
     End If
@@ -73,4 +179,5 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
         Target.Copy
         
     End If
+    
 End Sub
