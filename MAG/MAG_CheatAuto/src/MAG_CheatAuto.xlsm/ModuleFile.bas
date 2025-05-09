@@ -20,7 +20,6 @@ Public Sub WriteTextCheat()
     
     filePath = ThisWorkbook.path
     
-    
 End Sub
 
 Public Function CheckFolder() As Boolean

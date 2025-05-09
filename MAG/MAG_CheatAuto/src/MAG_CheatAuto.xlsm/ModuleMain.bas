@@ -86,11 +86,9 @@ Public Sub WriteCheat()
     
     path = ThisWorkbook.path & "\Mag_Cheat.txt"
     
-    'txt파일에 이어쓰기
-    If 치트키_시작.Offset(0, 1) = False Then
-    
-        Open path For Append As #1
-        
+    '생성된 파일이 없는 경우 신규 생성
+    If Dir(path, vbDirectory) = "" Then
+        Open path For Output As #1
         Print #1, "<Mag_CreatItem>"
         
         '치트키 영역을 돌면서 반복
@@ -100,50 +98,81 @@ Public Sub WriteCheat()
             If InStr(cell.Value, "조회된") = 0 Then
                 Print #1, cell.Value '---작성된 치트 메모장에 입력
             End If
-            
         Next
-        
-        Print #1, ""
         
         Close
-    Else
         
-        Open path For Input As #1
-        fileContent = Input$(LOF(1), 1)
-        Close #1
+        Exit Sub
         
-        lines = Split(fileContent, vbCrLf)
-        
-        For i = 0 To UBound(lines)
-            If lines(i) = "" Then
-                check = True
-            End If
+    End If
+    
+    'txt파일에 이어쓰기
+    If 치트키_시작.Offset(0, 1) = True Then
+    
+        Open path For Append As #1
+        Print #1, "<Mag_CreatItem2>"
             
-            If check = True Then
-                
-                modifiedContent = modifiedContent & lines(i) & vbCrLf
-                
-            End If
-        Next
-        
-        Open path For Output As #1
-        
-        Print #1, "<Mag_CreatItem>"
-        
+        '치트키 영역을 돌면서 반복
         For Each cell In 치트키
-        
+            
             '조회된 TID~~ 셀 제외
             If InStr(cell.Value, "조회된") = 0 Then
                 Print #1, cell.Value '---작성된 치트 메모장에 입력
             End If
-            
         Next
         
+        Close
+    Else
+        Open path For Input As #1
+        fileContent = Input$(LOF(1), 1)
+        Close #1
+
+        lines = Split(fileContent, vbCrLf)
+
+        For i = 0 To UBound(lines)
+            If lines(i) = "<Mag_CreatItem2>" Then
+                check = True
+            End If
+
+            If check = True Then
+            
+                    modifiedContent = modifiedContent & lines(i) & vbCrLf
+                    
+            End If
+        Next
+
+        Open path For Output As #1
+
+        Print #1, "<Mag_CreatItem>"
+
+        For Each cell In 치트키
+
+            '조회된 TID~~ 셀 제외
+            If InStr(cell.Value, "조회된") = 0 Then
+                Print #1, cell.Value '---작성된 치트 메모장에 입력
+            End If
+
+        Next
+
         Print #1, modifiedContent
         Close #1
-            
     End If
     
     치트키_시작.Offset(-1, 0).Value = "M1.CheatUsingPreset " & path & " <Mag_CreatItem>"
+
+End Sub
+
+Public Sub OpenTxt()
+    
+    Dim path As String
+    
+    path = ThisWorkbook.path & "\Mag_Cheat.txt"
+
+    If Dir(path, vbDirectory) = "" Then
+        MsgBox "메모장을 생성해주세요."
+        Exit Sub
+    End If
+    
+    Shell "notepad.exe " & Chr(34) & path & Chr(34), vbNormalFocus
 
 End Sub
