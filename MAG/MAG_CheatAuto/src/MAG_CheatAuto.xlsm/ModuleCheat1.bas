@@ -46,11 +46,17 @@ Public Function SQLFileLoad(cell As Range, rngFileName As Range)
     Dim rngRuneCell As Range '---RuneData 시트에서 key의 위치 변수
     Dim strRuneData As Variant '---RuneUIData 문서에서 찾은 값 저장 배열
     Dim strFileName As String
+    Dim strFolder As String
     
     '# 동작 시작
-    'On Error Resume Next
+    On Error Resume Next
+        
+    strFolder = LatestFolder
     
-    Call UpdateStart
+    If strFolder = "" Then
+        Exit Function
+        
+    End If
     
     '선택된 Key 값들을 묶어 Where 조건으로 변환
     For i = 1 To cell.Cells.Count
@@ -62,7 +68,7 @@ Public Function SQLFileLoad(cell As Range, rngFileName As Range)
         
         strFileName = rngFileName(i).Value
         
-        strFilePath = 파일경로.Value & "\" & strFileName & ".xlsx" '---문서 경로 지정
+        strFilePath = strFolder & "\" & strFileName & ".xlsx" '---문서 경로 지정
          
         If CheckFile(strFilePath) = True Then
             Exit Function

@@ -25,14 +25,15 @@ Public rngCheat1 As Range '---아이템 생성 치트키 영역
 Public rngCheat2 As Range '---랜덤 옵션 아이템 생성 치트키 영역
 
 Public i, j, k As Variant '---반복문 사용 변수
-Public cell As Range
+Public cell, cell2 As Range
 
 Public Sub SetRange()
 
-    With Sheets("Main")
+    With ThisWorkbook.Sheets("Main")
         
+        '치트키1, 2 영역 지정
         Set rngCheat1 = .Range("E:E,H:J").Columns
-        Set rngCheat2 = .Range("K:K,O:O,R:T").Columns
+        Set rngCheat2 = .Range("K:L,P:P,S:T,W:W").Columns
         
         Set 검색어 = .Range("B7")
         
@@ -50,9 +51,9 @@ Public Sub SetRange()
         If rngCheat2.Hidden = True Then
             Set 검색목록_시작 = .Range("E7")
         Else
-            Set 검색목록_시작 = .Range("K7")
+            Set 검색목록_시작 = .Range("L7")
             Set 검색옵션_시작 = 검색목록_시작.Offset(0, 3)
-            Set 검색옵션_스텟 = .Range("R5")
+            Set 검색옵션_스텟 = .Range("T5")
         End If
         
         If 검색목록_시작.Value = "" Then
@@ -63,7 +64,7 @@ Public Sub SetRange()
         Set 검색목록 = Range(검색목록_시작, 검색목록_끝)
         
         '치트키 영역 지정
-        Set 치트키_시작 = .Range("U7")
+        Set 치트키_시작 = .Range("X7")
         If IsEmpty(치트키_시작) Then
             Set 치트키_끝 = 치트키_시작
         Else
@@ -72,7 +73,7 @@ Public Sub SetRange()
         Set 치트키 = Range(치트키_시작, 치트키_끝)
     End With
     
-    With Sheets("etc")
+    With ThisWorkbook.Sheets("etc")
         
         Set 타입 = .ListObjects(1)
         

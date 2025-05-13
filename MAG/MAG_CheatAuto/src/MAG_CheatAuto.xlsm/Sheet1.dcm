@@ -40,6 +40,8 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
     Dim rngFind As Range
     Dim rngOptionList As Range
     Dim cnt As Variant
+    Dim strCheatKey As String
+    Dim rngOption As Range
     
     Call SetRange
     
@@ -47,8 +49,10 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
         Exit Sub
     End If
     
-    '#########################
+    '===============================================================================
     '검색 영역 선택 동작
+    
+    '선택 가능한 범위 확인
     If Not Intersect(Target, 키목록_시작.Offset(-1, 0)) Is Nothing Or Not Intersect(Target, Range("A:A")) Is Nothing Or Not Intersect(Target, Range("C:C")) Is Nothing Or Not Intersect(Target, 키목록_끝.Offset(1, 0)) Is Nothing Then
         
         Exit Sub
@@ -70,6 +74,8 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
         End If
         
     End If
+    
+    '===============================================================================
     
     '치트키2 활성화 상태일 때 동작
     If rngCheat1.Hidden = True Then
@@ -128,20 +134,35 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
                 Range("Option") = rngOptionList.Value
                 
             End If
+            
+            
+            If Target.Offset(0, 10).Value <> "" Then
+                With Range(Target.Offset(0, 10).Value).Borders
+                    .LineStyle = xlContinuous
+                    .ThemeColor = 9
+                    .Weight = xlMedium
+                End With
+            End If
+            
         End If
         
+        '===============================================================================
         '옵션 선택 영역
+        
         If Not Intersect(Target, Range("Option").Offset(0, 1)) Is Nothing Then
             
+            '표시된 옵션이 없는 경우 종료
             If Range("option")(1) = "" Then
                 Exit Sub
             End If
             
+            '선택한 셀에 테두리가 적용되어 있으면 테두리 제거 (선택 해제 동작)
             If Target.Borders.LineStyle = xlContinuous Then
                 Target.Borders.LineStyle = xlNone
-                Exit Sub
+                GoTo 치트키생성
             End If
             
+            '선택된 셀 개수 확인
             For Each cell In Range("Option").Offset(0, 1)
                 
                 If cell.Borders.LineStyle = xlContinuous Then
@@ -149,6 +170,7 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
                 End If
             Next
             
+            '최대 4대 선택 제한
             If cnt > 3 Then
                 MsgBox "옵션은 4개까지 선택 가능합니다."
                 Exit Sub
@@ -160,7 +182,65 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
                 .ThemeColor = 9
                 .Weight = xlMedium
             End With
+            
+            cnt = 0
+
+치트키생성:
+            '현재 선택된 key 확인
+            For Each cell In 검색목록
+                
+                Application.EnableEvents = False
+
+                If cell.Borders.LineStyle = xlContinuous Then
+                
+                    cell.Offset(0, 9).Clear
+                    
+                    strCheatKey = "M1.Inven.RequestCreateEquipmentRandomOption " & cell.Offset(0, 1).Value & " 100 5 "
+                    
+                    For Each cell2 In Range("Option").Offset(0, 1)
+                        If cell2.Borders.LineStyle = xlContinuous Then
+                            
+                            If rngOption Is Nothing = True Then
+                                Set rngOption = cell2
+                            Else
+                                Set rngOption = Union(rngOption, cell2)
+                            End If
+                            
+                            If 검색옵션_스텟 = False Then
+                                strCheatKey = strCheatKey & cell2.Offset(0, 1).Value & " " & cell2.Offset(0, 3).Value & " "
+                                
+                            Else
+                                strCheatKey = strCheatKey & cell2.Offset(0, 1).Value & " " & cell2.Offset(0, 4).Value & " "
+                                
+                            End If
+                            
+                            cnt = cnt + 1
+                            
+                        End If
+                    Next
+                    
+                    '선택된 옵션이 있는 경우 동작
+                    If cnt > 0 Then
+                        For i = cnt To 3
+                            strCheatKey = strCheatKey & "0 0 "
+                            
+                        Next
+                        cell.Offset(0, 9) = strCheatKey
+                        cell.Offset(0, 10) = rngOption.Address
+                    
+                    ElseIf cnt = 0 Then
+                        
+                        cell.Offset(0, 10).Clear
+                    End If
+                    
+                End If
+                Application.EnableEvents = True
+                
+            Next
+            
         End If
+        
+        '===============================================================================
         
     End If
     
