@@ -226,4 +226,6 @@ Public Sub CheatCreatItem()
     
     Next
     
+    Call LoadTxt
+    
 End Sub

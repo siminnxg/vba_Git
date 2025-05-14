@@ -16,6 +16,7 @@ Public 검색옵션_스텟 As Range
 Public 치트키 As Range
 Public 치트키_시작 As Range
 Public 치트키_끝 As Range
+Public 프리셋 As Range
 
 Public 파일경로 As Range
 
@@ -71,6 +72,7 @@ Public Sub SetRange()
             Set 치트키_끝 = 치트키_시작.Offset(-1, 0).End(xlDown)
         End If
         Set 치트키 = Range(치트키_시작, 치트키_끝)
+        Set 프리셋 = 치트키_시작.Offset(0, 2)
     End With
     
     With ThisWorkbook.Sheets("etc")

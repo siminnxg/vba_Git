@@ -32,4 +32,7 @@ Public Sub Cheat2()
             
         End If
     Next
+    
+    Call LoadTxt
+    
 End Sub
