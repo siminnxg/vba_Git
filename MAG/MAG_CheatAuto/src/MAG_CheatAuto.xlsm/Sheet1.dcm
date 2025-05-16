@@ -9,50 +9,78 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 Option Explicit
 
+'======================================================================================================
+'Main 시트 셀에 값 입력 시 동작 이벤트
+
+
 Private Sub Worksheet_Change(ByVal Target As Range)
     
+    '고정 영역 호출
     Call SetRange
     
+    '검색어 영역에 입력이 있는 경우 동작
     If Not Intersect(Target, 검색어) Is Nothing Then
     
-        키목록.Borders.LineStyle = xlNone
+        키목록.Borders.LineStyle = xlNone '---KEY 목록 테두리 전체 초기화
         
+        '공백 값 입력 시 검색어 영역에 " " 입력하여 전체 목록 표시
         If IsEmpty(Target.Value) Then
             Target.Value = " "
         End If
         
+        '검색 옵션에 따라 조회 시트 변경
+        'StringItem 문서 조회
         If 검색어.Offset(0, 1) = "기본" Then
+        
             키목록_시작.Formula2 = "=FILTER(StringItem!A:B,ISNUMBER((FIND(""" & 검색어.Value & """,StringItem!B:B))),"" 검색 결과가 없습니다."")"
             
+        'StringProduct 문서 조회
         Else
+        
             키목록_시작.Formula2 = "=FILTER(StringProduct!A:B,ISNUMBER((FIND(""" & 검색어.Value & """,StringProduct!B:B))),"" 검색 결과가 없습니다."")"
+            
         End If
 
-        Target.Select
+        Target.Select '---검색어 영역 선택
         
     End If
     
 End Sub
 
+'======================================================================================================
+'Main 시트 셀 선택 시 동작 이벤트
+
+
 Private Sub Worksheet_SelectionChange(ByVal Target As Range)
     
-    Dim strShtname As String
-    Dim rngFind As Range
-    Dim rngOptionList As Range
-    Dim cnt As Variant
-    Dim strCheatKey As String
-    Dim rngOption As Range
+    '# 변수 선언 #
+    Dim strShtname As String '조회할 시트 이름 저장 변수
+    Dim strCheatKey As String '임시 입력할 치트키 저장 변수
     
+    Dim rngFind As Range '다른 시트에서 찾은 셀 위치 저장 변수
+    Dim rngOptionList As Range '다른 시트에서 찾은 옵션 리스트 저장 변수
+    Dim rngOption As Range '선택되어 있는 옵션들의 위치 저장 변수
+        
+        
+    '# 동작 시작 #
+    
+    '고정 영역 호출
     Call SetRange
     
+    Call LoadTxt
+    
+    '선택된 KEY가 없는 경우 종료
     If IsError(키목록_시작) Then
+    
         Exit Sub
+        
     End If
     
-    '===============================================================================
-    '검색 영역 선택 동작
+'------------------------------------------------------------------------------------------------------
+'검색 영역 선택 동작
     
-    '선택 가능한 범위 확인
+    
+    '선택 가능한 범위 제외 선택 시 종료
     If Not Intersect(Target, 키목록_시작.Offset(-1, 0)) Is Nothing Or Not Intersect(Target, Range("A:A")) Is Nothing Or Not Intersect(Target, Range("C:C")) Is Nothing Or Not Intersect(Target, 키목록_끝.Offset(1, 0)) Is Nothing Then
         
         Exit Sub
@@ -60,40 +88,50 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
     '선택한 셀이 키목록 안이라면 동작
     ElseIf Not Intersect(Target, 키목록) Is Nothing Then
         
-        '선택한 셀 테두리 적용
+        '선택한 셀 테두리 존재 시 테두리 제거 (선택 해제 동작)
         If Target.Borders.LineStyle = xlContinuous Then
+        
             Target.Borders.LineStyle = xlNone
+        
+        '선택한 셀 테두리 적용
         Else
         
              With Target.Borders
-            .LineStyle = xlContinuous
-            .ThemeColor = 9
-            .Weight = xlMedium
+                .LineStyle = xlContinuous
+                .ThemeColor = 9
+                .Weight = xlMedium
             End With
             
         End If
-        
     End If
     
-    '===============================================================================
+'------------------------------------------------------------------------------------------------------
+'선택된 KEY 영역 선택 동작
+    
     
     '치트키2 활성화 상태일 때 동작
     If rngCheat1.Hidden = True Then
         
         '셀 2개 이상 선택 시 종료
         If Target.Cells.Count > 1 Then
+        
             Exit Sub
+            
         End If
             
-        '선택된 KEY 영역
+        '선텍한 셀이 검색목록 (선택된 KEY) 영역이라면 동작
         If Not Intersect(Target, 검색목록) Is Nothing Then
             
+            '선택한 셀이 공백인 경우 종료
             If Target = "" Then
+            
                 Exit Sub
+                
             End If
             
+            검색목록.Borders.LineStyle = xlNone '---검색목록 영역 전체 테두리 초기화
+            
             '선택한 셀 테두리 적용
-            검색목록.Borders.LineStyle = xlNone '---테두리 초기화
             With Target.Borders
                 .LineStyle = xlContinuous
                 .ThemeColor = 9
@@ -102,78 +140,108 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
             
             '아이템 타입 별 문서에서 KEY 검색 후 GroupId 추출
             For i = 1 To 3
-                strShtname = 타입.ListColumns("문서").DataBodyRange(i).Value
-                Set rngFind = Sheets(strShtname).UsedRange.Find(Target.Value, Lookat:=xlWhole)
+            
+                strShtname = 타입.ListColumns("문서").DataBodyRange(i).Value '---시트 순차적으로 지정
                 
+                Set rngFind = Sheets(strShtname).UsedRange.Find(Target.Value, Lookat:=xlWhole) '---선택된 셀을 검색할 시트에 검색
+                
+                '검색된 내용이 있을 때 동작
                 If Not rngFind Is Nothing Then
+                
                     Target.Offset(0, 1) = rngFind.Offset(0, -1).Value '---TID 추출
+                    
                     Target.Offset(0, 2) = rngFind.End(xlDown).Offset(-1, 1).Value '---그룹 ID 추출
-                    Exit For
+                    
+                    Exit For '---검색 후 곧바로 반복 종료
+                    
                 End If
             Next
             
-            '옵션 리스트 초기화
+            '옵션 리스트에 값이 있는 경우 동작
             If IsEmpty(검색옵션_시작) = False Then
-                    Range(검색옵션_시작, 검색옵션_시작.End(xlDown)).ClearContents
-                    Range("Option").Offset(0, 1).Borders.LineStyle = xlNone
+            
+                    Range(검색옵션_시작, 검색옵션_시작.End(xlDown)).ClearContents '---값 초기화
+                    
+                    Range("Option").Offset(0, 1).Borders.LineStyle = xlNone '---테두리 초기화
+                    
             End If
             
-            '검색된 GropuId 가 없으면 종료
+            '검색된 GropuId가 없으면 종료
             If IsEmpty(Target.Offset(0, 1)) = True Then
+            
                 Exit Sub
+                
             End If
             
-            'RandomOptionGroup 문서에서 GroupId 검색 후 OptionId 리스트 추출
+            'RandomOptionGroup 문서에서 GroupId 검색
             Set rngFind = Sheets("RandomOptionGroup").UsedRange.Find(Target.Offset(0, 2).Value, Lookat:=xlWhole)
-                
+            
+            '검색된 내용이 있을 때 동작
             If Not rngFind Is Nothing Then
                 
-                Set rngOptionList = Sheets("RandomOptionGroup").Range(rngFind, rngFind.End(xlDown).Offset(-1, 0)).Offset(0, 1)
+                Set rngOptionList = Sheets("RandomOptionGroup").Range(rngFind, rngFind.End(xlDown).Offset(-1, 0)).Offset(0, 1) '---검색된 ID 우측에 리스트 영역 저장
                 
-                ThisWorkbook.Names("Option").RefersTo = Range(검색옵션_시작, 검색옵션_시작.Offset(rngOptionList.Cells.Count - 1, 0))
-                Range("Option") = rngOptionList.Value
+                ThisWorkbook.Names("Option").RefersTo = Range(검색옵션_시작, 검색옵션_시작.Offset(rngOptionList.Cells.Count - 1, 0)) '---붙여넣을 영역 "Option" 이름으로 지정
+                
+                Range("Option") = rngOptionList.Value '---검색된 리스트 옵션 리스트에 붙여넣기
                 
             End If
             
-            
+            '기존 선택 중이던 상태일 때 동작
             If Target.Offset(0, 10).Value <> "" Then
+                
+                '선택 중이던 셀 테두리 적용
                 With Range(Target.Offset(0, 10).Value).Borders
                     .LineStyle = xlContinuous
                     .ThemeColor = 9
                     .Weight = xlMedium
                 End With
+                
             End If
-            
         End If
         
-        '===============================================================================
-        '옵션 선택 영역
+'------------------------------------------------------------------------------------------------------
+'Option 영역 선택 동작
         
+        
+        '선텍한 셀이 Option 리스트 영역이라면 동작
         If Not Intersect(Target, Range("Option").Offset(0, 1)) Is Nothing Then
             
             '표시된 옵션이 없는 경우 종료
             If Range("option")(1) = "" Then
+            
                 Exit Sub
+                
             End If
             
-            '선택한 셀에 테두리가 적용되어 있으면 테두리 제거 (선택 해제 동작)
+            '선택한 셀 테두리 존재 시 테두리 제거 (선택 해제 동작)
             If Target.Borders.LineStyle = xlContinuous Then
+            
                 Target.Borders.LineStyle = xlNone
+                
                 GoTo 치트키생성
+                
             End If
+            
+            cnt = 0
             
             '선택된 셀 개수 확인
             For Each cell In Range("Option").Offset(0, 1)
                 
                 If cell.Borders.LineStyle = xlContinuous Then
+                
                     cnt = cnt + 1
+                    
                 End If
             Next
             
-            '최대 4대 선택 제한
+            '4개 셀 선택 상태일 때 종료
             If cnt > 3 Then
+            
                 MsgBox "옵션은 4개까지 선택 가능합니다."
+                
                 Exit Sub
+                
             End If
             
             '선택한 셀 테두리 적용
@@ -182,81 +250,103 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
                 .ThemeColor = 9
                 .Weight = xlMedium
             End With
-            
-            cnt = 0
 
 치트키생성:
-            '현재 선택된 key 확인
+
+            cnt = 0 '---변수 초기화
+            
+            '선택된 KEY 영역 순회
             For Each cell In 검색목록
                 
-                Application.EnableEvents = False
-
+                Application.EnableEvents = False '---이벤트 동작 정지
+                
+                '현재 셀에 테두리가 적용되어 있을 때 동작
                 If cell.Borders.LineStyle = xlContinuous Then
                 
-                    cell.Offset(0, 9).Clear
+                    cell.Offset(0, 9).Clear '---치트키 임시 입력 영역 초기화
                     
-                    strCheatKey = "M1.Inven.RequestCreateEquipmentRandomOption " & cell.Offset(0, 1).Value & " 100 5 "
+                    strCheatKey = "M1.Inven.RequestCreateEquipmentRandomOption " & cell.Offset(0, 1).Value & " 100 5 " '---선택한 셀로 치트키 생성
                     
+                    '옵션 리스트 영역 순회
                     For Each cell2 In Range("Option").Offset(0, 1)
+                        
+                        '현재 셀에 테두리가 적용되어 있을 때 동작
                         If cell2.Borders.LineStyle = xlContinuous Then
                             
+                            '테두리가 있는 셀들을 변수에 저장
                             If rngOption Is Nothing = True Then
+                            
                                 Set rngOption = cell2
+                                
                             Else
+                            
                                 Set rngOption = Union(rngOption, cell2)
+                                
                             End If
                             
+                            '스텟 min/max 구분하여 치트키 임시 입력
                             If 검색옵션_스텟 = False Then
+                            
                                 strCheatKey = strCheatKey & cell2.Offset(0, 1).Value & " " & cell2.Offset(0, 3).Value & " "
                                 
                             Else
+                            
                                 strCheatKey = strCheatKey & cell2.Offset(0, 1).Value & " " & cell2.Offset(0, 4).Value & " "
                                 
                             End If
                             
-                            cnt = cnt + 1
+                            cnt = cnt + 1 '---옵션 개수 체크
                             
                         End If
                     Next
                     
                     '선택된 옵션이 있는 경우 동작
                     If cnt > 0 Then
+                        
+                        '옵션 3개 이하인 경우 0 0 추가 입력
                         For i = cnt To 3
+                        
                             strCheatKey = strCheatKey & "0 0 "
                             
                         Next
-                        cell.Offset(0, 9) = strCheatKey
-                        cell.Offset(0, 10) = rngOption.Address
+                        
+                        cell.Offset(0, 9) = strCheatKey '---임시 치트키 입력
+                        cell.Offset(0, 10) = rngOption.Address '---선택된 옵션 주소 입력
                     
+                    '선택된 옵션이 없는 경우 선택 주소 저장 셀 초기화
                     ElseIf cnt = 0 Then
                         
                         cell.Offset(0, 10).Clear
+                        
                     End If
-                    
                 End If
-                Application.EnableEvents = True
+                
+                Application.EnableEvents = True '---이벤트 동작 시작
                 
             Next
-            
         End If
-        
-        '===============================================================================
-        
     End If
+
+'------------------------------------------------------------------------------------------------------
+'Cheat List 영역 선택 동작
     
-    '치트키 영역 선택 시 복사
+    
+    '선텍한 셀이 Cheat List 영역이라면 동작
     If Not Intersect(Target, Range(치트키, 치트키_시작.Offset(-1, 0))) Is Nothing Then
         
         '셀 2개 이상 선택 시 종료
         If Target.Cells.Count > 1 Then
+        
             Exit Sub
         
-        '조회된 TID~~ 선택 시 종료
+        '선택된 셀에 '조회된' 문구 포함 시 종료
         ElseIf IsEmpty(Target) = True Or InStr(Target.Value, "조회된") > 0 Or InStr(Target.Value, "일괄 입력") > 0 Then
+        
             Exit Sub
+            
         End If
     
-        Target.Copy
+        Target.Copy '---선택한 셀 복사
         
     End If
     

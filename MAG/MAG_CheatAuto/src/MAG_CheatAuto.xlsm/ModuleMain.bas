@@ -55,7 +55,7 @@ Public Sub ClearCheatList()
     치트키.ClearContents
     프리셋.Offset(2, 0).Resize(100, 1).ClearContents
     
-    치트키_시작.Offset(-1, 0).Value = "일괄 입력 희망 시 [메모장 생성] 버튼을 클릭해주세요."
+    치트키_시작.Offset(-1, 0).Value = "일괄 입력 희망 시 [메모장 입력] 버튼을 클릭해주세요."
     
 End Sub
 
@@ -93,14 +93,16 @@ Public Sub WriteCheat()
     
     '프리셋명 확인
     If 프리셋 = "" Then
-        strPreset = "<Mag_CreatItem>"
+        strPreset = "<Mag_CreateItem>"
     Else
         strPreset = "<" & 프리셋.Value & ">"
     End If
         
     '생성된 파일이 없는 경우 신규 생성
     If Dir(path, vbDirectory) = "" Then
+        
         Open path For Output As #1
+                        
             Print #1, strPreset
             
             '치트키 영역을 돌면서 반복
@@ -108,7 +110,9 @@ Public Sub WriteCheat()
                 
                 '조회된 TID~~ 셀 제외
                 If InStr(cell.Value, "조회된") = 0 Then
+                
                     Print #1, cell.Value '---작성된 치트 메모장에 입력
+                    
                 End If
                 
             Next
@@ -120,7 +124,17 @@ Public Sub WriteCheat()
     
     End If
     
-    If strPreset = "<Mag_CreatItem>" Then
+    '프리셋 명이 공백인 경우 동작
+    If strPreset = "<Mag_CreateItem>" Then
+        
+        i = MsgBox("<Mag_CreateItem> 프리셋을 덮어쓰시겠습니까?", vbYesNo)
+        
+        If i = 7 Then
+        
+            GoTo 종료
+            
+        End If
+        
         Open path For Input As #1
             strContents = Input$(LOF(1), 1)
         Close #1
@@ -131,7 +145,7 @@ Public Sub WriteCheat()
             GoTo 이어쓰기
         End If
         
-        If lines(0) = "<Mag_CreatItem>" Then
+        If lines(0) = "<Mag_CreateItem>" Then
             index = 1
         Else
             index = 0
@@ -231,7 +245,10 @@ Public Sub OpenTxt()
 
 End Sub
 
+'======================================================================================================
 'Cheat 파일에서 프리셋명을 찾아 리스트에 출력
+
+
 Public Function LoadTxt()
     
     Dim path As String
@@ -278,3 +295,34 @@ Public Function LoadTxt()
     LoadTxt = 프리셋.Offset(2, 0).Resize(i, 1).Address
     
 End Function
+
+'======================================================================================================
+'메모장 초기화
+
+
+Public Sub ClearTxt()
+    
+    Dim path As String
+    
+    path = ThisWorkbook.path & "\Mag_Cheat.txt" '---메모장 경로 지정
+    
+    '생성된 파일이 없을 때 종료
+    If Dir(path, vbDirectory) = "" Then
+    
+        MsgBox "생성된 파일이 존재하지 않습니다."
+        
+        Exit Sub
+        
+    End If
+    
+    'txt파일에 빈값 넣기
+    Open path For Output As #1
+    
+        Print #1,
+                
+    Close
+    
+    '프리셋 리스트 갱신
+    Call LoadTxt
+    
+End Sub

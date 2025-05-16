@@ -26,7 +26,9 @@ Public rngCheat1 As Range '---아이템 생성 치트키 영역
 Public rngCheat2 As Range '---랜덤 옵션 아이템 생성 치트키 영역
 
 Public i, j, k As Variant '---반복문 사용 변수
+Public cnt As Variant
 Public cell, cell2 As Range
+
 
 Public Sub SetRange()
 

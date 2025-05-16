@@ -1,13 +1,18 @@
 Attribute VB_Name = "ModuleDesign"
 Option Explicit
 
+'======================================================================================================
+'치트키1 / 치트키2 변경
+
+
 Public Sub ChangeCheat()
 
     Dim Shp1 As Shape
     Dim Shp2 As Shape
     
-    Set Shp1 = Sheets("Main").Shapes("Cheat1_shp")
-    Set Shp2 = Sheets("Main").Shapes("Cheat2_shp")
+    '토글 버튼 이미지 지정
+    Set Shp1 = Sheets("Main").Shapes("Cheat2_shp")
+    Set Shp2 = Sheets("Main").Shapes("Cheat1_shp")
     
     Call SetRange
     
