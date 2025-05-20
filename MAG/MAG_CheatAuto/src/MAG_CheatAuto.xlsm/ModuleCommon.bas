@@ -1,31 +1,39 @@
 Attribute VB_Name = "ModuleCommon"
 Option Explicit
 
-Public 검색어 As Range
+'###################################################
+'공용 사용 변수, 모듈
+'###################################################
 
+
+'Search 영역
+Public 검색어 As Range
 Public 키목록 As Range
 Public 키목록_시작 As Range
 Public 키목록_끝 As Range
 
+'치트키 설정 영역
 Public 검색목록 As Range
 Public 검색목록_시작 As Range
 Public 검색목록_끝 As Range
 Public 검색옵션_시작 As Range
 Public 검색옵션_스텟 As Range
 
+'Cheat List 영역
 Public 치트키 As Range
 Public 치트키_시작 As Range
 Public 치트키_끝 As Range
 Public 프리셋 As Range
+Public 프리셋_끝 As Range
 
+'etc 시트 영역
 Public 파일경로 As Range
-
 Public 타입 As ListObject
 
 Public rngCheat1 As Range '---아이템 생성 치트키 영역
 Public rngCheat2 As Range '---랜덤 옵션 아이템 생성 치트키 영역
 
-Public i, j, k As Variant '---반복문 사용 변수
+Public i, j, k As Variant
 Public cnt As Variant
 Public cell, cell2 As Range
 
@@ -74,7 +82,9 @@ Public Sub SetRange()
             Set 치트키_끝 = 치트키_시작.Offset(-1, 0).End(xlDown)
         End If
         Set 치트키 = Range(치트키_시작, 치트키_끝)
+        
         Set 프리셋 = 치트키_시작.Offset(0, 2)
+        Set 프리셋_끝 = 프리셋.Offset(1, 0).End(xlDown)
     End With
     
     With ThisWorkbook.Sheets("etc")
@@ -86,7 +96,6 @@ Public Sub SetRange()
     End With
     
 End Sub
-
 
 Public Sub UpdateStart()
     

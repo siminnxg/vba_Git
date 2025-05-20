@@ -54,6 +54,7 @@ End Sub
 Private Sub Worksheet_SelectionChange(ByVal Target As Range)
     
     '# 변수 선언 #
+    
     Dim strShtname As String '조회할 시트 이름 저장 변수
     Dim strCheatKey As String '임시 입력할 치트키 저장 변수
     
@@ -205,12 +206,19 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
         
         
         '선텍한 셀이 Option 리스트 영역이라면 동작
-        If Not Intersect(Target, Range("Option").Offset(0, 1)) Is Nothing Then
+        If Not Intersect(Target, Range("Option").Offset(0, 1)) Is Nothing Or Not Intersect(Target, 검색옵션_스텟) Is Nothing Then
             
             '표시된 옵션이 없는 경우 종료
             If Range("option")(1) = "" Then
             
                 Exit Sub
+                
+            End If
+            
+            '검색옵션_스텟 셀 선택 시 동작
+            If Target.Address <> 검색옵션_스텟 Then
+                
+                GoTo 치트키생성
                 
             End If
             
@@ -243,13 +251,14 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
                 Exit Sub
                 
             End If
-            
+                        
             '선택한 셀 테두리 적용
             With Target.Borders
                 .LineStyle = xlContinuous
                 .ThemeColor = 9
                 .Weight = xlMedium
             End With
+            
 
 치트키생성:
 
@@ -348,6 +357,16 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
     
         Target.Copy '---선택한 셀 복사
         
+    End If
+    
+    '프리셋 리스트 선택 시 치트키 입력
+    If Not Intersect(Target, Range(프리셋.Offset(2, 0), 프리셋_끝)) Is Nothing Then
+        
+        If Target <> "" Then
+        
+            치트키_시작.Offset(-1, 0).Value = "M1.CheatUsingPreset " & ThisWorkbook.path & "\Mag_Cheat.txt" & " """ & Target.Value & """"
+            
+        End If
     End If
     
 End Sub

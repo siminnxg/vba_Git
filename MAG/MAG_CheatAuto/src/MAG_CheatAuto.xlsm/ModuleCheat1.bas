@@ -29,7 +29,7 @@ Public Sub Cheat1()
     '치트키 생성
     Call CheatCreatItem
     
-    치트키_시작.Offset(-1, 0).Value = "일괄 입력 희망 시 [메모장 생성] 버튼을 클릭해주세요." '---상단에 안내 문구 표시
+    치트키_시작.Offset(-1, 0).Value = "일괄 입력 희망 시 [메모장 입력] 버튼을 클릭해주세요." '---상단에 안내 문구 표시
     
 종료:
 
@@ -149,7 +149,6 @@ Public Function SQLFileLoad(cell As Range, rngFileName As Range)
             Set obj = Nothing
             Set objDB = Nothing
             
-            '
             For k = 0 To j - 1
             
                 Set rngFindCell = cell.Find(strRuneData(k, 0), Lookat:=xlWhole)
