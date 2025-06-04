@@ -43,8 +43,8 @@ Public Sub SetRange()
     With ThisWorkbook.Sheets("Main")
         
         '치트키1, 2 영역 지정
-        Set rngCheat1 = .Range("E:E,H:J").Columns
-        Set rngCheat2 = .Range("K:L,P:P,S:T,W:W").Columns
+        Set rngCheat1 = .Range("G:G,J:L").Columns
+        Set rngCheat2 = .Range("M:M,O:O,S:S,V:W,Z:Z").Columns
         
         Set 검색어 = .Range("B7")
         
@@ -60,11 +60,11 @@ Public Sub SetRange()
         '검색목록 영역 지정
         'Cheat1 / Cheat2 구분
         If rngCheat2.Hidden = True Then
-            Set 검색목록_시작 = .Range("E7")
+            Set 검색목록_시작 = .Range("F7")
         Else
-            Set 검색목록_시작 = .Range("L7")
-            Set 검색옵션_시작 = 검색목록_시작.Offset(0, 3)
-            Set 검색옵션_스텟 = .Range("T5")
+            Set 검색목록_시작 = .Range("N7")
+            Set 검색옵션_시작 = 검색목록_시작.Offset(0, 4)
+            Set 검색옵션_스텟 = .Range("W5")
         End If
         
         If 검색목록_시작.Value = "" Then
@@ -75,7 +75,7 @@ Public Sub SetRange()
         Set 검색목록 = Range(검색목록_시작, 검색목록_끝)
         
         '치트키 영역 지정
-        Set 치트키_시작 = .Range("X7")
+        Set 치트키_시작 = .Range("AA7")
         If IsEmpty(치트키_시작) Then
             Set 치트키_끝 = 치트키_시작
         Else

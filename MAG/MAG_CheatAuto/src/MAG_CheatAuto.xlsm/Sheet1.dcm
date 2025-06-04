@@ -23,25 +23,48 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     
         키목록.Borders.LineStyle = xlNone '---KEY 목록 테두리 전체 초기화
         
-        '공백 값 입력 시 검색어 영역에 " " 입력하여 전체 목록 표시
+        '공백 값 입력 시 전체 데이터 표시
         If IsEmpty(Target.Value) Then
-            Target.Value = " "
+            
+            'StringItem 표 표시
+            If 검색어.Offset(0, 1) = "기본" Then
+            
+                키목록_시작.Formula2 = "=FILTER(DATA,DATA[KO/Text]<>"""","""")"
+                
+            'CustomizingItemData 표 표시
+            Else
+            
+                키목록_시작.Formula2 = "=FILTER(DATA__11,DATA__11[memo]<>"""","""")"
+                
+            End If
+            
+            Exit Sub
+            
         End If
         
         '검색 옵션에 따라 조회 시트 변경
         'StringItem 문서 조회
         If 검색어.Offset(0, 1) = "기본" Then
         
-            키목록_시작.Formula2 = "=FILTER(StringItem!A:B,ISNUMBER((FIND(""" & 검색어.Value & """,StringItem!B:B))),"" 검색 결과가 없습니다."")"
+            키목록_시작.Formula2 = "=FILTER(StringItem!A:B,(ISNUMBER(SEARCH(""" & 검색어.Value & """,StringItem!B:B)) + ISNUMBER(SEARCH(""" & 검색어.Value & """,StringItem!A:A))) > 0,"" 검색 결과가 없습니다."")"
             
         'StringProduct 문서 조회
         Else
         
-            키목록_시작.Formula2 = "=FILTER(StringProduct!A:B,ISNUMBER((FIND(""" & 검색어.Value & """,StringProduct!B:B))),"" 검색 결과가 없습니다."")"
+            키목록_시작.Formula2 = "=FILTER(CustomizingItemData!A:C, ((ISNUMBER(SEARCH(""" & 검색어.Value & """,CustomizingItemData!B:B)) + ISNUMBER(SEARCH(""" & 검색어.Value & """,CustomizingItemData!A:A))) > 0), "" 검색 결과가 없습니다."")"
             
         End If
 
         Target.Select '---검색어 영역 선택
+        
+    End If
+    
+    '검색 옵션 변경 시 동작
+    If Not Intersect(Target, 검색어.Offset(0, 1)) Is Nothing Then
+        
+        검색어.Value = ""
+        
+        검색어.Select
         
     End If
     
@@ -55,7 +78,6 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
     
     '# 변수 선언 #
     
-    Dim strShtname As String '조회할 시트 이름 저장 변수
     Dim strCheatKey As String '임시 입력할 치트키 저장 변수
     
     Dim rngFind As Range '다른 시트에서 찾은 셀 위치 저장 변수
@@ -68,12 +90,10 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
     '고정 영역 호출
     Call SetRange
     
-    Call LoadTxt
-    
     '선택된 KEY가 없는 경우 종료
     If IsError(키목록_시작) Then
     
-        Exit Sub
+        GoTo 종료
         
     End If
     
@@ -84,7 +104,7 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
     '선택 가능한 범위 제외 선택 시 종료
     If Not Intersect(Target, 키목록_시작.Offset(-1, 0)) Is Nothing Or Not Intersect(Target, Range("A:A")) Is Nothing Or Not Intersect(Target, Range("C:C")) Is Nothing Or Not Intersect(Target, 키목록_끝.Offset(1, 0)) Is Nothing Then
         
-        Exit Sub
+        GoTo 종료
         
     '선택한 셀이 키목록 안이라면 동작
     ElseIf Not Intersect(Target, 키목록) Is Nothing Then
@@ -116,21 +136,21 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
         '셀 2개 이상 선택 시 종료
         If Target.Cells.Count > 1 Then
         
-            Exit Sub
+            GoTo 종료
             
         End If
             
         '선텍한 셀이 검색목록 (선택된 KEY) 영역이라면 동작
-        If Not Intersect(Target, 검색목록) Is Nothing Then
+        If Not Intersect(Target, 검색목록.Offset(0, 1)) Is Nothing Then
             
             '선택한 셀이 공백인 경우 종료
             If Target = "" Then
             
-                Exit Sub
+                GoTo 종료
                 
             End If
             
-            검색목록.Borders.LineStyle = xlNone '---검색목록 영역 전체 테두리 초기화
+            검색목록.Offset(0, 1).Borders.LineStyle = xlNone '---검색목록 영역 전체 테두리 초기화
             
             '선택한 셀 테두리 적용
             With Target.Borders
@@ -138,25 +158,6 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
                 .ThemeColor = 9
                 .Weight = xlMedium
             End With
-            
-            '아이템 타입 별 문서에서 KEY 검색 후 GroupId 추출
-            For i = 1 To 3
-            
-                strShtname = 타입.ListColumns("문서").DataBodyRange(i).Value '---시트 순차적으로 지정
-                
-                Set rngFind = Sheets(strShtname).UsedRange.Find(Target.Value, Lookat:=xlWhole) '---선택된 셀을 검색할 시트에 검색
-                
-                '검색된 내용이 있을 때 동작
-                If Not rngFind Is Nothing Then
-                
-                    Target.Offset(0, 1) = rngFind.Offset(0, -1).Value '---TID 추출
-                    
-                    Target.Offset(0, 2) = rngFind.End(xlDown).Offset(-1, 1).Value '---그룹 ID 추출
-                    
-                    Exit For '---검색 후 곧바로 반복 종료
-                    
-                End If
-            Next
             
             '옵션 리스트에 값이 있는 경우 동작
             If IsEmpty(검색옵션_시작) = False Then
@@ -170,7 +171,7 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
             '검색된 GropuId가 없으면 종료
             If IsEmpty(Target.Offset(0, 1)) = True Then
             
-                Exit Sub
+                GoTo 종료
                 
             End If
             
@@ -211,12 +212,12 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
             '표시된 옵션이 없는 경우 종료
             If Range("option")(1) = "" Then
             
-                Exit Sub
+                GoTo 종료
                 
             End If
             
             '검색옵션_스텟 셀 선택 시 동작
-            If Target.Address <> 검색옵션_스텟 Then
+            If Target.Address = 검색옵션_스텟.Address Then
                 
                 GoTo 치트키생성
                 
@@ -248,7 +249,7 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
             
                 MsgBox "옵션은 4개까지 선택 가능합니다."
                 
-                Exit Sub
+                GoTo 종료
                 
             End If
                         
@@ -265,14 +266,14 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
             cnt = 0 '---변수 초기화
             
             '선택된 KEY 영역 순회
-            For Each cell In 검색목록
+            For Each cell In 검색목록.Offset(0, 1)
                 
                 Application.EnableEvents = False '---이벤트 동작 정지
                 
                 '현재 셀에 테두리가 적용되어 있을 때 동작
                 If cell.Borders.LineStyle = xlContinuous Then
                 
-                    cell.Offset(0, 9).Clear '---치트키 임시 입력 영역 초기화
+                    cell.Offset(0, 10).Clear '---치트키 임시 입력 영역 초기화
                     
                     strCheatKey = "M1.Inven.RequestCreateEquipmentRandomOption " & cell.Offset(0, 1).Value & " 100 5 " '---선택한 셀로 치트키 생성
                     
@@ -325,7 +326,7 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
                     '선택된 옵션이 없는 경우 선택 주소 저장 셀 초기화
                     ElseIf cnt = 0 Then
                         
-                        cell.Offset(0, 10).Clear
+                        cell.Offset(0, 9).Clear
                         
                     End If
                 End If
@@ -346,12 +347,12 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
         '셀 2개 이상 선택 시 종료
         If Target.Cells.Count > 1 Then
         
-            Exit Sub
+            GoTo 종료
         
         '선택된 셀에 '조회된' 문구 포함 시 종료
         ElseIf IsEmpty(Target) = True Or InStr(Target.Value, "조회된") > 0 Or InStr(Target.Value, "일괄 입력") > 0 Then
         
-            Exit Sub
+            GoTo 종료
             
         End If
     
@@ -368,5 +369,16 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
             
         End If
     End If
+    
+    
+    If Not Intersect(Target, 프리셋.Offset(1, 0)) Is Nothing Then
+    
+        Call LoadTxt
+        
+    End If
+    
+종료:
+    
+    Call UpdateEnd
     
 End Sub

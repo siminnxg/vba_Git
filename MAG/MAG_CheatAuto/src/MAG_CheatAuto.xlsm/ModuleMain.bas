@@ -9,6 +9,16 @@ Public Sub SelectKey()
     
     Call SetRange
     
+    i = 2
+    j = ""
+    
+    If 검색어.Offset(0, 1) = "커스터마이징" Then
+        
+        i = 3
+        j = "CustomizingItemData"
+    
+    End If
+    
     '키 목록을 순회하며 선택된 셀 확인
     For Each cell In 키목록
     
@@ -18,34 +28,44 @@ Public Sub SelectKey()
             '검색 목록 첫 행이 비어있을 때 동작
             If 검색목록_시작.Value = "" Then
             
-                검색목록_시작.Value = cell.Value '---첫 행에 KEY 입력
+                검색목록_시작.Resize(1, i) = cell.Resize(1, i).Value '---첫 행에 KEY 입력
+                
+                검색목록_시작.Offset(0, i) = j
                 
             '검색 목록 첫 행에 값이 존재할 때 동작
             Else
             
                 Set 검색목록_끝 = 검색목록_끝.Offset(1, 0)
                 
-                검색목록_끝.Value = cell.Value '---끝 행에 KEY 입력
+                검색목록_끝.Resize(1, i) = cell.Resize(1, i).Value '---끝 행에 KEY 입력
+                
+                검색목록_끝.Offset(0, i) = j
                 
             End If
         End If
     Next
     
+    If rngCheat2.Hidden = False And IsEmpty(검색목록_시작) = False Then
+        
+        Call Cheat2TID
+        
+    End If
+    
     키목록.Borders.LineStyle = xlNone '---이동 완료 후 테두리 초기화
     
     검색어.Select '---검색어 영역에 커서 이동
-
+       
 End Sub
 
 '======================================================================================================
 '치트키1 [초기화] 버튼 클릭 시 동작
 
-
+ 
 Public Sub ClearKEYList1()
 
     Call SetRange
     
-    검색목록.Resize(, 5).ClearContents
+    검색목록.Resize(, 6).ClearContents
     
 End Sub
 
@@ -58,9 +78,9 @@ Public Sub ClearKEYList2()
 
     Call SetRange
     
-    검색목록.Borders.LineStyle = xlNone
-    검색목록.Offset(0, 9).Resize(, 2).Clear
-    검색목록.Resize(, 3).ClearContents
+    검색목록.Offset(0, 1).Borders.LineStyle = xlNone
+    검색목록.Offset(0, 10).Resize(, 2).Clear
+    검색목록.Resize(, 4).ClearContents
     
     Range(검색옵션_시작, 검색옵션_시작.End(xlDown)).Borders.LineStyle = xlNone
     Range(검색옵션_시작, 검색옵션_시작.End(xlDown)).ClearContents
@@ -334,6 +354,7 @@ Public Function LoadTxt()
     If Dir(path, vbDirectory) = "" Then
     
         Exit Function
+        Call UpdateEnd
         
     End If
     
@@ -400,13 +421,17 @@ Public Sub ClearTxt()
         
     End If
     
-    'txt파일 초기화
-    Open path For Output As #1
-    Close
+    If MsgBox("메모장을 초기화 하시겠습니까?", vbYesNo) = vbYes Then
     
-    '프리셋 리스트 갱신
-    Call LoadTxt
+        'txt파일 초기화
+        Open path For Output As #1
+        Close
+        
+        '프리셋 리스트 갱신
+        Call LoadTxt
+        
+        치트키_시작.Offset(-1, 0).Value = "일괄 입력 희망 시 [메모장 입력] 버튼을 클릭해주세요."
     
-    치트키_시작.Offset(-1, 0).Value = "일괄 입력 희망 시 [메모장 입력] 버튼을 클릭해주세요."
+    End If
     
 End Sub

@@ -53,10 +53,9 @@ Public Function CheckFolder() As Boolean
         
     '입력된 경로가 존재하는지 확인
     If Dir(strFolder, vbDirectory) = "" Then
-    
-        MsgBox "현재 설정된 경로는 존재하지 않는 경로입니다." & vbCrLf & _
-                "경로를 재설정해주세요."
-                
+        
+        Sheets("etc").Range("H2").Value = "C:\Users\" & Environ("USERNAME") & "\Downloads"
+        
         CheckFolder = True
         
         Exit Function
@@ -132,10 +131,8 @@ Public Function LatestFolder()
         
         '검색된 폴더가 없을 때 종료
         If cnt = 1 Then
-        
-            MsgBox "설정된 경로에 MAG 데이터 폴더가 존재하지 않습니다."
             
-            LatestFolder = ""
+            LatestFolder = path
             
             Exit Function
             
@@ -162,9 +159,7 @@ Public Function LatestFolder()
                             strLatest = .Value
                             
                         End If
-                        
                     End If
-                    
                 End With
                 
             Next
