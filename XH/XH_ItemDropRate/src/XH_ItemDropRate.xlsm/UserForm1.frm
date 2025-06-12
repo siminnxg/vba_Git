@@ -101,7 +101,8 @@ Private Sub CommandButton1_Click()
     Dim varDropRate As Variant
     Dim path As String
         
-    Dim 결과 As Range
+    Dim 결과 As Range '---드랍율을 초과한 데이터를 출력할 위치
+    Dim 결과2 As Range '---아이템 등급이 일치하지 않는 데이트를 출력할 위치
     Dim 파일명 As Range
     
     '#동작 시작#
@@ -152,7 +153,11 @@ Private Sub CommandButton1_Click()
     'Main 시트 초기화
     Call ClearMain
     
-    Set 결과 = Range("B4") '---붙여 넣을 영역 지정
+    Set 결과 = Sheets("Main").Range("B4") '---붙여 넣을 영역 지정
+        
+    Set 결과2 = Sheets("등급오류").Range("B2")
+    
+    Range("헤더").Copy Destination:=결과2.Offset(-1, 0) '--머릿글 행 추가
     
     For i = 0 To Me.List_File.ListCount - 1
         
@@ -163,6 +168,8 @@ Private Sub CommandButton1_Click()
         Set 파일명 = 결과.Offset(-1, -1)
         
         파일명 = Range("파일이름")(i + 1) '---조회된 파일명 입력
+        
+        결과2.Offset(0, -1).Value = Range("파일이름")(i + 1)
         
         'OLEDB 연결
         Set objDB = CreateObject("ADODB.Connection")
@@ -187,7 +194,7 @@ Private Sub CommandButton1_Click()
             '조회된 데이터가 없으면 다음 등급으로 이동
             If obj.EOF Then
                 
-                GoTo 다음등급
+                GoTo 등급조회
             
             '조회된 데이터가 있는 경우 Main 시트에 입력
             Else
@@ -207,6 +214,28 @@ Private Sub CommandButton1_Click()
                 
             End If
             
+등급조회:
+            '아이템 타입 중 등급이 일치하지 않는 조건 조회
+            strSql = " SELECT * FROM [Data$] WHERE F10 = '아이템' AND F8 LIKE '%" & strLevel & "%' AND (F9 <> '" & strLevel & "' OR F12 NOT LIKE '%Grade" & j & "%')"
+            
+            Set obj = objDB.Execute(strSql)
+            
+            '조회된 데이터가 없으면 다음 등급으로 이동
+            If obj.EOF Then
+                
+                GoTo 다음등급
+            
+            '조회된 데이터가 있는 경우 등급오류 시트에 입력
+            Else
+                
+                결과2.CopyFromRecordset obj '---조회된 데이터 입력
+                
+                Set 결과2 = 결과2.End(xlDown).Offset(1, 0)
+                
+                Application.CutCopyMode = False
+                
+            End If
+                        
 다음등급:
 
         Next
@@ -283,4 +312,3 @@ Public Function CheckRate(rngResult As Range, varDropRate As Variant)
     End If
 
 End Function
-

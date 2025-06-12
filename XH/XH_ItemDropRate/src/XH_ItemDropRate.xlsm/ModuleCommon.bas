@@ -44,7 +44,15 @@ Public Sub ClearMain()
                 
     End With
     
-    Range("A3").Select
+     With Sheets("등급오류").UsedRange
+        
+        .ClearContents
+        .Borders.LineStyle = xlNone
+        .Interior.Color = xlNone
+                
+    End With
+    
+    Sheets("Main").Range("A3").Select
     
 End Sub
 
