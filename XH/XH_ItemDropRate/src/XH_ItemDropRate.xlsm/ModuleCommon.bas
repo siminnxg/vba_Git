@@ -9,7 +9,7 @@ Public i, j, k As Integer
 Public cell As Range
 Public control As control
 
-
+'화면 업데이트 중지하여 실행 속도 증가
 Public Sub UpdateStart()
     
     Application.ScreenUpdating = False
@@ -19,6 +19,7 @@ Public Sub UpdateStart()
 
 End Sub
 
+'화면 업데이트 동작
 Public Sub UpdateEnd()
 
     Application.ScreenUpdating = True
