@@ -1,7 +1,7 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} UserForm1 
    Caption         =   "폴더 경로"
-   ClientHeight    =   1545
+   ClientHeight    =   3240
    ClientLeft      =   120
    ClientTop       =   465
    ClientWidth     =   7635
@@ -53,4 +53,8 @@ Private Sub CommandButton1_Click()
     '폼 종료
     Unload Me
     
+End Sub
+
+Private Sub Label2_Click()
+
 End Sub

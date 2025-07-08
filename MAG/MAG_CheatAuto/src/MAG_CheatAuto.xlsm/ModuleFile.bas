@@ -30,7 +30,7 @@ Public Sub RefreshData()
     ActiveWorkbook.Queries.Item("Address").Formula = Chr(34) & strFolder & Chr(34) & " meta [IsParameterQuery=true, Type=""Any"", IsParameterQueryRequired=true]"
     
     ActiveWorkbook.RefreshAll
-
+    
 End Sub
 
 Public Sub WriteTextCheat()

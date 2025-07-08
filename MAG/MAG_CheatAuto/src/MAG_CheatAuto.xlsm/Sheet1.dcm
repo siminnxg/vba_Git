@@ -9,16 +9,23 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 Option Explicit
 
-'======================================================================================================
+
+'######################################################################################################
+
 'Main 시트 셀에 값 입력 시 동작 이벤트
 
+'######################################################################################################
 
 Private Sub Worksheet_Change(ByVal Target As Range)
+    
+    Dim strCheatKey As String '임시 입력할 치트키 저장 변수
     
     '고정 영역 호출
     Call SetRange
     
-    '검색어 영역에 입력이 있는 경우 동작
+'------------------------------------------------------------------------------------------------------
+'검색어 영역에 입력이 있는 경우 동작
+
     If Not Intersect(Target, 검색어) Is Nothing Then
     
         키목록.Borders.LineStyle = xlNone '---KEY 목록 테두리 전체 초기화
@@ -59,7 +66,9 @@ Private Sub Worksheet_Change(ByVal Target As Range)
         
     End If
     
-    '검색 옵션 변경 시 동작
+'------------------------------------------------------------------------------------------------------
+'검색 옵션 변경 시 동작
+
     If Not Intersect(Target, 검색어.Offset(0, 1)) Is Nothing Then
         
         검색어.Value = ""
@@ -68,24 +77,97 @@ Private Sub Worksheet_Change(ByVal Target As Range)
         
     End If
     
+'------------------------------------------------------------------------------------------------------
+'코어 옵션 체크박스 선택 시 코어 옵션 리스트 표시/숨기기
+
+    If Not Intersect(Target, 코어체크) Is Nothing Then
+        
+        Application.ScreenUpdating = False
+        
+        If 코어체크 = True Then
+            
+            rngCore.Hidden = False
+            
+            '코어 리스트 호출 (무기 / 외장부품 코어 리스트 분리 작업)
+            Call CoreList
+            
+            '코어 옵션 오픈 시 포커스 이동
+            Application.Goto Reference:=Range("M1"), Scroll:=True
+        
+        Else
+            
+            rngCore.Hidden = True
+            
+            '코어 옵션 닫을 때 포커스 이동
+            Application.Goto Reference:=Range("A1"), Scroll:=True
+            
+        End If
+        
+        Application.ScreenUpdating = True
+        
+    End If
+    
+'------------------------------------------------------------------------------------------------------
+'코어 옵션 리스트에 수량 입력
+    
+    'Core에 값이 있을 때 동작
+    If Range("Core") <> "" Then
+        
+        'target이 수량 영역이고 하나의 셀만 선택되었을 때 동작
+        If Not Intersect(Target, Range("Core#").Resize(, 1).Offset(0, 4)) Is Nothing And Target.Cells.Count = 1 Then
+            
+            '입력한 값이 정수, 0이 아님 이거나 공백일 때 동작
+            If (IsNumeric(Target.Value) = True And Target.Value <> 0) Or IsEmpty(Target.Value) = True Then
+                    
+                If WorksheetFunction.Sum(Range("Core#").Resize(, 1).Offset(0, 4)) > 5 Then
+                    
+                    MsgBox "코어 옵션은 최대 5개까지 선택 가능합니다."
+                    
+                    Target.ClearContents
+                    
+                    Target.Select
+                    
+                    Target.Offset(0, -4).Borders.LineStyle = xlNone
+                    
+                    Exit Sub
+                    
+                Else
+                                     
+                    Call Cheat2Core
+                
+                End If
+            End If
+        End If
+    End If
+    
+    Application.EnableEvents = True
+    
 End Sub
 
-'======================================================================================================
+'######################################################################################################
+
 'Main 시트 셀 선택 시 동작 이벤트
 
+'######################################################################################################
 
 Private Sub Worksheet_SelectionChange(ByVal Target As Range)
     
     '# 변수 선언 #
     
     Dim strCheatKey As String '임시 입력할 치트키 저장 변수
+    Dim strCoreCheat As String '코어 옵션 체크 시 치트키 저장 변수
     
     Dim rngFind As Range '다른 시트에서 찾은 셀 위치 저장 변수
     Dim rngOptionList As Range '다른 시트에서 찾은 옵션 리스트 저장 변수
     Dim rngOption As Range '선택되어 있는 옵션들의 위치 저장 변수
+    
+    Dim varCoreOption As Variant '코어 옵션 저장 값을 분리해 담을 배열
+    Dim varCoreAdr As Variant '분리한 코어 옵션 값을 주소와 수량으로 한번 더 분리하여 담을 배열
         
         
     '# 동작 시작 #
+    
+    Application.ScreenUpdating = False
     
     '고정 영역 호출
     Call SetRange
@@ -116,19 +198,14 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
         
         '선택한 셀 테두리 적용
         Else
-        
-             With Target.Borders
-                .LineStyle = xlContinuous
-                .ThemeColor = 9
-                .Weight = xlMedium
-            End With
+            
+            Call CellBorder(Target)
             
         End If
     End If
     
 '------------------------------------------------------------------------------------------------------
 '선택된 KEY 영역 선택 동작
-    
     
     '치트키2 활성화 상태일 때 동작
     If rngCheat1.Hidden = True Then
@@ -150,14 +227,12 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
                 
             End If
             
+            Range("selKey") = Target.Address
+            
             검색목록.Offset(0, 1).Borders.LineStyle = xlNone '---검색목록 영역 전체 테두리 초기화
             
             '선택한 셀 테두리 적용
-            With Target.Borders
-                .LineStyle = xlContinuous
-                .ThemeColor = 9
-                .Weight = xlMedium
-            End With
+            Call CellBorder(Target)
             
             '옵션 리스트에 값이 있는 경우 동작
             If IsEmpty(검색옵션_시작) = False Then
@@ -193,13 +268,54 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
             If Target.Offset(0, 10).Value <> "" Then
                 
                 '선택 중이던 셀 테두리 적용
-                With Range(Target.Offset(0, 10).Value).Borders
-                    .LineStyle = xlContinuous
-                    .ThemeColor = 9
-                    .Weight = xlMedium
-                End With
+                Call CellBorder(Range(Target.Offset(0, 10).Value))
                 
             End If
+            
+            '코어 옵션 영역 초기화
+            Range("Core").Resize(100, 5).ClearContents
+            
+            '선택된 key 리스트 선택 시 코어 리스트 표시
+            '무기 선택 시 동작
+            If Range("Option")(1).Offset(0, 1).Value = "총기 공격력" Then
+                
+                Range("Core").Formula2R1C1 = "=코어_무기"
+                
+            '반응로 선택 시 동작
+            ElseIf Range("Option")(1).Offset(0, 1).Value = "스킬 자원 소모량" Then
+                
+            '외장부품 선택 시 동작
+            Else
+                
+                Range("Core").Formula2R1C1 = "=코어_외장부품"
+                
+            End If
+            
+            Range("Core").Resize(100, 1).Borders.LineStyle = xlNone
+            
+            '기존 코어 옵션 수량 입력해둔 내역이 있을 때 불러오기
+            With Cells(Target.Row, Range("Core").Column + 5)
+            If .Value <> "" Then
+                
+                Application.EnableEvents = False
+                
+                varCoreOption = Split(.Value, "&")
+                
+                For i = 0 To UBound(varCoreOption) - 1
+                    
+                    varCoreAdr = Split(varCoreOption(i), ",")
+                    Range(varCoreAdr(0)) = varCoreAdr(1)
+                    
+                Next
+                
+                
+                 Application.EnableEvents = True
+                 
+                 Range("Core").Offset(0, 4) = Range("Core").Offset(0, 4)
+                
+            End If
+            End With
+            
         End If
         
 '------------------------------------------------------------------------------------------------------
@@ -211,7 +327,7 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
             
             '표시된 옵션이 없는 경우 종료
             If Range("option")(1) = "" Then
-            
+                                
                 GoTo 종료
                 
             End If
@@ -254,12 +370,7 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
             End If
                         
             '선택한 셀 테두리 적용
-            With Target.Borders
-                .LineStyle = xlContinuous
-                .ThemeColor = 9
-                .Weight = xlMedium
-            End With
-            
+            Call CellBorder(Target)
 
 치트키생성:
 
@@ -275,7 +386,7 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
                 
                     cell.Offset(0, 10).Clear '---치트키 임시 입력 영역 초기화
                     
-                    strCheatKey = "M1.Inven.RequestCreateEquipmentRandomOption " & cell.Offset(0, 1).Value & " 100 5 " '---선택한 셀로 치트키 생성
+                    strCheatKey = "RequestCreateEquipmentAllOptions " & cell.Offset(0, 1).Value & " 100 5 True (" '---선택한 셀로 치트키 생성
                     
                     '옵션 리스트 영역 순회
                     For Each cell2 In Range("Option").Offset(0, 1)
@@ -296,12 +407,30 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
                             
                             '스텟 min/max 구분하여 치트키 임시 입력
                             If 검색옵션_스텟 = False Then
-                            
-                                strCheatKey = strCheatKey & cell2.Offset(0, 1).Value & " " & cell2.Offset(0, 3).Value & " "
+                                    
+                                '스텟 값이 음수인 경우 min <-> max 변경
+                                If cell2.Offset(0, 4).Value < 0 Then
+                                                                           
+                                    strCheatKey = strCheatKey & """" & cell2.Offset(0, 1).Value & ":max"","
+                                    
+                                Else
+                                
+                                    strCheatKey = strCheatKey & """" & cell2.Offset(0, 1).Value & ":min""," '---임시 치트키 입력
+                                    
+                                End If
                                 
                             Else
                             
-                                strCheatKey = strCheatKey & cell2.Offset(0, 1).Value & " " & cell2.Offset(0, 4).Value & " "
+                                 '스텟 값이 음수인 경우 min <-> max 변경
+                                If cell2.Offset(0, 4).Value < 0 Then
+                                                                           
+                                    strCheatKey = strCheatKey & """" & cell2.Offset(0, 1).Value & ":min"","
+                                    
+                                Else
+                                
+                                strCheatKey = strCheatKey & """" & cell2.Offset(0, 1).Value & ":max""," '---임시 치트키 입력
+                                
+                                End If
                                 
                             End If
                             
@@ -310,23 +439,21 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
                         End If
                     Next
                     
+                    strCheatKey = strCheatKey & ") " '---치트키 끝에 괄호 닫기
+                                        
                     '선택된 옵션이 있는 경우 동작
                     If cnt > 0 Then
                         
-                        '옵션 3개 이하인 경우 0 0 추가 입력
-                        For i = cnt To 3
-                        
-                            strCheatKey = strCheatKey & "0 0 "
-                            
-                        Next
-                        
-                        cell.Offset(0, 9) = strCheatKey '---임시 치트키 입력
                         cell.Offset(0, 10) = rngOption.Address '---선택된 옵션 주소 입력
+                                                
+                        cell.Offset(0, 9) = strCheatKey '---임시 랜덤 옵션 치트키 입력
                     
                     '선택된 옵션이 없는 경우 선택 주소 저장 셀 초기화
                     ElseIf cnt = 0 Then
                         
-                        cell.Offset(0, 9).Clear
+                        cell.Offset(0, 9).ClearContents
+                        
+                        cell.Offset(0, 10).ClearContents
                         
                     End If
                 End If
@@ -358,6 +485,8 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
     
         Target.Copy '---선택한 셀 복사
         
+        Exit Sub
+        
     End If
     
     '프리셋 리스트 선택 시 치트키 입력
@@ -368,6 +497,7 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
             치트키_시작.Offset(-1, 0).Value = "M1.CheatUsingPreset " & ThisWorkbook.path & "\Mag_Cheat.txt" & " """ & Target.Value & """"
             
         End If
+        
     End If
     
     

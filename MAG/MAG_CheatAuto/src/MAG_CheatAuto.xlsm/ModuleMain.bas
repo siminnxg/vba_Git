@@ -79,13 +79,19 @@ Public Sub ClearKEYList2()
     Call SetRange
     
     검색목록.Offset(0, 1).Borders.LineStyle = xlNone
-    검색목록.Offset(0, 10).Resize(, 2).Clear
+    검색목록.Offset(0, 10).Resize(, 3).Clear
     검색목록.Resize(, 4).ClearContents
     
     Range(검색옵션_시작, 검색옵션_시작.End(xlDown)).Borders.LineStyle = xlNone
     Range(검색옵션_시작, 검색옵션_시작.End(xlDown)).ClearContents
         
     Range("Option").Offset(0, 1).Borders.LineStyle = xlNone
+    
+    With Range("Core").Resize(100, 6)
+        .ClearContents
+        .Borders.LineStyle = xlNone
+    End With
+    
 End Sub
 
 '======================================================================================================

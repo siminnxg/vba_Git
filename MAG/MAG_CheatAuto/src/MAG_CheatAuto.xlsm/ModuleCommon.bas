@@ -19,6 +19,9 @@ Public 검색목록_끝 As Range
 Public 검색옵션_시작 As Range
 Public 검색옵션_스텟 As Range
 
+Public 코어목록 As Range
+Public 코어체크 As Range
+
 'Cheat List 영역
 Public 치트키 As Range
 Public 치트키_시작 As Range
@@ -32,6 +35,9 @@ Public 타입 As ListObject
 
 Public rngCheat1 As Range '---아이템 생성 치트키 영역
 Public rngCheat2 As Range '---랜덤 옵션 아이템 생성 치트키 영역
+Public rngCore As Range
+
+Public rngNowKey As Range '---현재 선택된 key 영역
 
 Public i, j, k As Variant
 Public cnt As Variant
@@ -44,7 +50,8 @@ Public Sub SetRange()
         
         '치트키1, 2 영역 지정
         Set rngCheat1 = .Range("G:G,J:L").Columns
-        Set rngCheat2 = .Range("M:M,O:O,S:S,V:W,Z:Z").Columns
+        Set rngCheat2 = .Range("M:M,O:O,S:S,V:W,AH:AH").Columns
+        Set rngCore = .Range("AA:AB,AD:AF").Columns
         
         Set 검색어 = .Range("B7")
         
@@ -65,6 +72,7 @@ Public Sub SetRange()
             Set 검색목록_시작 = .Range("N7")
             Set 검색옵션_시작 = 검색목록_시작.Offset(0, 4)
             Set 검색옵션_스텟 = .Range("W5")
+            
         End If
         
         If 검색목록_시작.Value = "" Then
@@ -72,10 +80,14 @@ Public Sub SetRange()
         Else
             Set 검색목록_끝 = 검색목록_시작.Offset(-1, 0).End(xlDown)
         End If
+        
         Set 검색목록 = Range(검색목록_시작, 검색목록_끝)
         
+        Set 코어체크 = Range("V4")
+        
         '치트키 영역 지정
-        Set 치트키_시작 = .Range("AA7")
+        Set 치트키_시작 = .Range("AI7")
+        
         If IsEmpty(치트키_시작) Then
             Set 치트키_끝 = 치트키_시작
         Else
