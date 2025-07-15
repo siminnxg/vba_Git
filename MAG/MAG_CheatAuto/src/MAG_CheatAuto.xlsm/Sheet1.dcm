@@ -277,7 +277,7 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Range)
             
             '선택된 key 리스트 선택 시 코어 리스트 표시
             '무기 선택 시 동작
-            If Range("Option")(1).Offset(0, 1).Value = "총기 공격력" Then
+            If InStr(Range("Option")(1).Offset(0, 1).Value, "공격력") > 0 Then
                 
                 Range("Core").Formula2R1C1 = "=코어_무기"
                 
